@@ -1,0 +1,18 @@
+#!/bin/bash
+
+
+### Set initial time of file
+echo "Okay, I've Started the watcher. You can now start making edits to the files in /src folder and they will be automatically built."
+LTIME=`stat src/*`
+while true
+do
+    ATIME=`stat src/*` 
+    if [[ "$ATIME" != "$LTIME" ]]
+    then
+        echo "Changes detected. Building..."
+        yarn dev-build-elm
+        echo "Ready."
+        LTIME=$ATIME
+    fi
+    sleep 3 
+done
