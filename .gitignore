@@ -1,4 +1,4 @@
 node_modules
 elm-stuff
-main.js
-style.css
+build/main.js
+build/style.css
