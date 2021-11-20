@@ -1,0 +1,6 @@
+{
+  "appId": "com.druchan.elmtest",
+  "appName": "ElmTest",
+  "webDir": "build",
+  "bundledWebRuntime": false
+}

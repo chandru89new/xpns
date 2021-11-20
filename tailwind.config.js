@@ -1,7 +1,7 @@
 module.exports = {
   purge: {
     content: [
-      './src/**/*.*'
+      './src/**/*.*',
     ],
     enabled: true
   },
