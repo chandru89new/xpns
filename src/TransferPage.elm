@@ -1,0 +1,272 @@
+module TransferPage exposing (..)
+
+import API
+import Capacitor
+import ExpenseTracker exposing (showError)
+import FeatherIcons
+import Html as H exposing (Html)
+import Html.Attributes as Attr
+import Html.Events as Ev
+import Http
+import Json.Encode as JsonE
+import Page
+import Task
+
+
+type alias Model =
+    { amount : String
+    , fromAccount : String
+    , toAccount : String
+    , date : String
+    , info : String
+    , notes : String
+    , pageState : PageState
+    }
+
+
+init =
+    Model "" "" "" "" "" "" Loading
+
+
+type PageState
+    = Loading
+    | Saving
+    | Loaded
+
+
+type Msg
+    = GoToHomePage
+    | UpdateFromAccount String
+    | UpdateToAccount String
+    | UpdateAmount String
+    | UpdateNotes String
+    | UpdateInfo String
+    | UpdateDate String
+    | SaveTransfer
+    | SaveTransferDone (Result Http.Error ())
+
+
+update : Msg -> Model -> Page.Global -> ( Model, Cmd Msg )
+update msg model globals =
+    case msg of
+        GoToHomePage ->
+            ( model, Cmd.none )
+
+        UpdateFromAccount acc ->
+            ( { model | fromAccount = acc }, Cmd.none )
+
+        UpdateDate date ->
+            ( { model | date = date }, Cmd.none )
+
+        UpdateToAccount acc ->
+            ( { model | toAccount = acc }, Cmd.none )
+
+        UpdateAmount amt ->
+            ( { model | amount = amt }, Cmd.none )
+
+        UpdateNotes notes ->
+            ( { model | notes = notes }, Cmd.none )
+
+        UpdateInfo info ->
+            ( { model | info = info }, Cmd.none )
+
+        SaveTransfer ->
+            ( { model | pageState = Saving }, saveTransfer model globals )
+
+        SaveTransferDone res ->
+            case res of
+                Ok _ ->
+                    ( clearForm model, Task.perform (\_ -> GoToHomePage) (Task.succeed ()) )
+
+                Err e ->
+                    ( model
+                    , Capacitor.showAlert
+                        { title = " Error "
+                        , message = Debug.toString e
+                        }
+                    )
+
+
+pageHeader =
+    Page.renderHeader
+        { icon = FeatherIcons.home
+        , msg = GoToHomePage
+        , text = "Transfer"
+        }
+
+
+pageWrapper body =
+    H.div []
+        [ pageHeader
+        , Page.renderBody body
+        ]
+
+
+view : Page.Global -> Model -> Html Msg
+view globals model =
+    pageWrapper <|
+        H.div
+            [ Attr.class "flex flex-col gap-5"
+            ]
+            [ if globals.sheetError /= "" then
+                showError globals.sheetError
+
+              else if globals.sheetId == "" then
+                showError "No sheet ID."
+
+              else
+                H.text ""
+            , Page.formElement "From which account?" <|
+                H.select
+                    [ Ev.onInput UpdateFromAccount
+                    , Attr.placeholder "Select account"
+                    ]
+                <|
+                    List.map
+                        (\option ->
+                            H.option [ Attr.value option, Attr.selected (option == model.fromAccount) ]
+                                [ H.text
+                                    (if option == "" then
+                                        "Select account"
+
+                                     else
+                                        option
+                                    )
+                                ]
+                        )
+                    <|
+                        List.concat [ [ "" ], globals.accounts ]
+            , Page.formElement "To which account?" <|
+                H.select
+                    [ Ev.onInput UpdateToAccount
+                    , Attr.placeholder "Select account"
+                    ]
+                <|
+                    List.map
+                        (\option ->
+                            H.option [ Attr.value option, Attr.selected (option == model.toAccount) ]
+                                [ H.text
+                                    (if option == "" then
+                                        "Select account"
+
+                                     else
+                                        option
+                                    )
+                                ]
+                        )
+                    <|
+                        List.concat [ [ "" ], globals.accounts ]
+            , Page.formElement "How much?" <|
+                H.input
+                    [ Attr.value model.amount
+                    , Ev.onInput UpdateAmount
+                    , Attr.type_ "number"
+                    ]
+                    []
+            , Page.formElement "When?" <|
+                H.input
+                    [ Attr.value model.date
+                    , Ev.onInput UpdateDate
+                    , Attr.type_ "date"
+                    ]
+                    []
+            , Page.formElement "Deets? (optional)" <|
+                H.input
+                    [ Attr.value model.info
+                    , Ev.onInput UpdateInfo
+                    ]
+                    []
+            , Page.formElement "Notes (optional)" <|
+                H.input
+                    [ Attr.value model.notes
+                    , Ev.onInput UpdateNotes
+                    ]
+                    []
+            , H.div [ Attr.class "flex justify-around gap-4" ]
+                [ H.button
+                    [ Ev.onClick GoToHomePage
+                    ]
+                    [ H.text "Back" ]
+                , H.button
+                    [ Attr.class "primary"
+                    , Attr.disabled
+                        ((not <| isFormValid model) || model.pageState == Saving)
+                    , Ev.onClick SaveTransfer
+                    ]
+                    [ H.text "Save" ]
+                ]
+            ]
+
+
+isFormValid : Model -> Bool
+isFormValid model =
+    let
+        dateIsValid =
+            not <| String.isEmpty model.date
+
+        modelAsNumber =
+            case String.toFloat model.amount of
+                Nothing ->
+                    False
+
+                Just _ ->
+                    True
+
+        accountsNotSame =
+            model.toAccount /= model.fromAccount
+
+        accountsValid =
+            not <| String.isEmpty model.toAccount || String.isEmpty model.fromAccount
+    in
+    dateIsValid && modelAsNumber && accountsValid && accountsNotSame
+
+
+saveTransfer : Model -> Page.Global -> Cmd Msg
+saveTransfer model { token, sheetId } =
+    let
+        body =
+            Http.jsonBody <|
+                JsonE.object
+                    [ ( "values"
+                      , JsonE.list (JsonE.list JsonE.string)
+                            [ [ model.date
+                              , model.info
+                              , "transfer"
+                              , model.amount
+                              , model.fromAccount
+                              , model.notes
+                              ]
+                            , [ model.date
+                              , model.info
+                              , "transfer"
+                              , "-" ++ model.amount
+                              , model.toAccount
+                              , model.notes
+                              ]
+                            ]
+                      )
+                    ]
+
+        queryParams =
+            [ ( "valueInputOption", "USER_ENTERED" )
+            ]
+
+        expect =
+            Http.expectWhatever SaveTransferDone
+
+        baseURL =
+            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ "expense!A:Z" ++ ":append"
+    in
+    API.post token baseURL queryParams body expect
+
+
+clearForm : Model -> Model
+clearForm _ =
+    { amount = ""
+    , fromAccount = ""
+    , toAccount = ""
+    , date = ""
+    , info = ""
+    , notes = ""
+    , pageState = Loaded
+    }

@@ -2,6 +2,34 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+#app-page-header {
+  @apply grid gap-2 items-center text-center bg-white fixed top-0 left-0 right-0 py-5 px-3 border-b;
+  grid-auto-flow: column;
+  grid-template-columns: 0.5fr 3fr 0.5fr;
+  z-index: 1000;
+}
+
+#app-page-content {
+  @apply mt-16 p-10;
+}
+
+input, textarea, select {
+  @apply w-full border rounded p-2
+}
+
 button {
-  @apply p-2 w-12 h-12 border rounded-full bg-green-50
+  @apply px-4 py-2
+}
+
+button.disabled {
+  opacity: 0.5
+}
+
+button.primary {
+  @apply rounded bg-yellow-400 text-white
+}
+
+button.primary:disabled {
+  filter: grayscale(100%);
+  @apply cursor-not-allowed
 }

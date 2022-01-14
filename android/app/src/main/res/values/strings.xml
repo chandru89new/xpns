@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ElmTest</string>
-    <string name="title_activity_main">ElmTest</string>
-    <string name="package_name">com.druchan.elmtest</string>
-    <string name="custom_url_scheme">com.druchan.elmtest</string>
+    <string name="app_name">XpnsAdd</string>
+    <string name="title_activity_main">XpnsAdd</string>
+    <string name="package_name">com.druchan.xpnsadd</string>
+    <string name="custom_url_scheme">com.druchan.xpnsadd</string>
 </resources>

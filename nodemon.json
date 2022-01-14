@@ -7,11 +7,13 @@
     "package.json"
   ],
   "ignore": [
-    "build",
+    "main.js",
+    "style.css",
     "elm-stuff",
     "node_modules",
     "android",
-    "ios"
+    "ios",
+    "dist"
   ],
   "ext": "elm, css, json, js"
 }

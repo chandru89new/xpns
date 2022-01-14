@@ -1,4 +1,4 @@
-package com.druchan.elmtest;
+package com.druchan.xpnsadd;
 
 import com.getcapacitor.BridgeActivity;
 

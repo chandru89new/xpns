@@ -1,6 +1,6 @@
 {
-  "appId": "com.druchan.elmtest",
-  "appName": "ElmTest",
-  "webDir": "build",
+  "appId": "com.druchan.xpnsadd",
+  "appName": "XpnsAdd",
+  "webDir": "dist",
   "bundledWebRuntime": false
 }
