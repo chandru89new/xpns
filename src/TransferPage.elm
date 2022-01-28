@@ -222,7 +222,7 @@ isFormValid model =
 
 
 saveTransfer : Model -> Page.Global -> Cmd Msg
-saveTransfer model { token, sheetId } =
+saveTransfer model { token, expenseSheet, sheetId } =
     let
         body =
             Http.jsonBody <|
@@ -255,7 +255,7 @@ saveTransfer model { token, sheetId } =
             Http.expectWhatever SaveTransferDone
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ "expense!A:Z" ++ ":append"
+            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append"
     in
     API.post token baseURL queryParams body expect
 

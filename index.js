@@ -2,7 +2,6 @@ import { Storage } from '@capacitor/storage'
 import { App } from '@capacitor/app'
 import { Dialog } from '@capacitor/dialog';
 import { Browser } from '@capacitor/browser';
-import { add, isAfter } from 'date-fns';
 
 const getFromStorage = async key => {
   try {
@@ -70,12 +69,13 @@ app.ports.logOut.subscribe(() => {
   Storage.remove({
     key: 'refreshToken'
   })
-  App.exitApp()
 })
 
-app.ports.getSheetIdFromStorage.subscribe(async () => {
+app.ports.getSheetSettingsFromStorage.subscribe(async () => {
   const sheetId = await getFromStorage('sheetId')
-  return app.ports.receiveSheetIdFromStorage.send(sheetId || '')
+  const accountSheet = await getFromStorage('accountSheet')
+  const expenseSheet = await getFromStorage('expenseSheet')
+  return app.ports.receiveSheetSettingsFromStorage.send([sheetId, accountSheet, expenseSheet])
 })
 
 app.ports.exitApp.subscribe(() => App.exitApp())

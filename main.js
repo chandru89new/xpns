@@ -5330,8 +5330,8 @@ var $author$project$Auth$checkForRefreshToken = _Platform_outgoingPort(
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
-var $author$project$Main$getSheetIdFromStorage = _Platform_outgoingPort(
-	'getSheetIdFromStorage',
+var $author$project$Ports$getSheetSettingsFromStorage = _Platform_outgoingPort(
+	'getSheetSettingsFromStorage',
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
@@ -5346,6 +5346,11 @@ var $author$project$ExpenseTracker$init = {account: '', allAccounts: _List_Nil, 
 var $author$project$HomePage$init = '1';
 var $author$project$IncomePage$Loaded = {$: 'Loaded'};
 var $author$project$IncomePage$init = {amount: '', date: '', info: '', intoAccount: '', notes: '', pageState: $author$project$IncomePage$Loaded};
+var $author$project$SettingsPage$Model = F3(
+	function (sheetId, accountSheet, expenseSheet) {
+		return {accountSheet: accountSheet, expenseSheet: expenseSheet, sheetId: sheetId};
+	});
+var $author$project$SettingsPage$init = A3($author$project$SettingsPage$Model, '', '', '');
 var $author$project$TransferPage$Loading = {$: 'Loading'};
 var $author$project$TransferPage$Model = F7(
 	function (amount, fromAccount, toAccount, date, info, notes, pageState) {
@@ -5360,7 +5365,7 @@ var $elm$core$Tuple$pair = F2(
 var $author$project$Main$init = function (_v0) {
 	return A2(
 		$elm$core$Tuple$pair,
-		{accounts: _List_Nil, auth: $author$project$Auth$init, currentPage: $author$project$Main$Loading, expenseTracker: $author$project$ExpenseTracker$init, homePage: $author$project$HomePage$init, incomePage: $author$project$IncomePage$init, sheetError: '', sheetId: '', toastMsg: $elm$core$Maybe$Nothing, transferPage: $author$project$TransferPage$init},
+		{accounts: _List_Nil, auth: $author$project$Auth$init, currentPage: $author$project$Main$Loading, expenseTracker: $author$project$ExpenseTracker$init, homePage: $author$project$HomePage$init, incomePage: $author$project$IncomePage$init, sheetError: '', sheetSettings: $author$project$SettingsPage$init, toastMsg: $elm$core$Maybe$Nothing, transferPage: $author$project$TransferPage$init},
 		$elm$core$Platform$Cmd$batch(
 			_List_fromArray(
 				[
@@ -5368,7 +5373,7 @@ var $author$project$Main$init = function (_v0) {
 					$elm$core$Platform$Cmd$map,
 					$author$project$Main$AuthMsg,
 					$author$project$Auth$checkForRefreshToken(_Utils_Tuple0)),
-					$author$project$Main$getSheetIdFromStorage(_Utils_Tuple0)
+					$author$project$Ports$getSheetSettingsFromStorage(_Utils_Tuple0)
 				])));
 };
 var $author$project$Main$GoBack = {$: 'GoBack'};
@@ -5378,8 +5383,8 @@ var $author$project$Auth$ReceiveAuthCode = function (a) {
 var $author$project$Auth$ReceiveRefreshToken = function (a) {
 	return {$: 'ReceiveRefreshToken', a: a};
 };
-var $author$project$Main$UpdateSheetId = function (a) {
-	return {$: 'UpdateSheetId', a: a};
+var $author$project$Main$ReceiveSheetSettingsFromStorage = function (a) {
+	return {$: 'ReceiveSheetSettingsFromStorage', a: a};
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$json$Json$Decode$string = _Json_decodeString;
@@ -5387,7 +5392,27 @@ var $author$project$Main$goBack = _Platform_incomingPort('goBack', $elm$json$Jso
 var $elm$core$Platform$Sub$map = _Platform_map;
 var $author$project$Auth$receiveAuthCode = _Platform_incomingPort('receiveAuthCode', $elm$json$Json$Decode$string);
 var $author$project$Auth$receiveRefreshToken = _Platform_incomingPort('receiveRefreshToken', $elm$json$Json$Decode$string);
-var $author$project$Main$receiveSheetIdFromStorage = _Platform_incomingPort('receiveSheetIdFromStorage', $elm$json$Json$Decode$string);
+var $elm$json$Json$Decode$andThen = _Json_andThen;
+var $elm$json$Json$Decode$index = _Json_decodeIndex;
+var $author$project$Main$receiveSheetSettingsFromStorage = _Platform_incomingPort(
+	'receiveSheetSettingsFromStorage',
+	A2(
+		$elm$json$Json$Decode$andThen,
+		function (_v0) {
+			return A2(
+				$elm$json$Json$Decode$andThen,
+				function (_v1) {
+					return A2(
+						$elm$json$Json$Decode$andThen,
+						function (_v2) {
+							return $elm$json$Json$Decode$succeed(
+								_Utils_Tuple3(_v0, _v1, _v2));
+						},
+						A2($elm$json$Json$Decode$index, 2, $elm$json$Json$Decode$string));
+				},
+				A2($elm$json$Json$Decode$index, 1, $elm$json$Json$Decode$string));
+		},
+		A2($elm$json$Json$Decode$index, 0, $elm$json$Json$Decode$string)));
 var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$batch(
 		_List_fromArray(
@@ -5400,7 +5425,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 				$elm$core$Platform$Sub$map,
 				$author$project$Main$AuthMsg,
 				$author$project$Auth$receiveAuthCode($author$project$Auth$ReceiveAuthCode)),
-				$author$project$Main$receiveSheetIdFromStorage($author$project$Main$UpdateSheetId),
+				$author$project$Main$receiveSheetSettingsFromStorage($author$project$Main$ReceiveSheetSettingsFromStorage),
 				$author$project$Main$goBack(
 				function (_v1) {
 					return $author$project$Main$GoBack;
@@ -5421,7 +5446,11 @@ var $author$project$Main$IncomePageMsg = function (a) {
 	return {$: 'IncomePageMsg', a: a};
 };
 var $author$project$Main$Login = {$: 'Login'};
+var $author$project$Main$Logout = {$: 'Logout'};
 var $author$project$Main$SettingsPage = {$: 'SettingsPage'};
+var $author$project$Main$SettingsPageMsg = function (a) {
+	return {$: 'SettingsPageMsg', a: a};
+};
 var $author$project$Main$TransferPage = {$: 'TransferPage'};
 var $author$project$Main$TransferPageMsg = function (a) {
 	return {$: 'TransferPageMsg', a: a};
@@ -6321,6 +6350,7 @@ var $elm$core$Maybe$withDefault = F2(
 var $author$project$Main$getAccounts = function (_v0) {
 	var token = _v0.token;
 	var sheetId = _v0.sheetId;
+	var accountSheet = _v0.accountSheet;
 	var queryParams = _List_fromArray(
 		[
 			_Utils_Tuple2('majorDimension', 'COLUMNS')
@@ -6337,11 +6367,11 @@ var $author$project$Main$getAccounts = function (_v0) {
 			$elm$json$Json$Decode$list(
 				$elm$json$Json$Decode$list($elm$json$Json$Decode$string))));
 	var expect = A2($elm$http$Http$expectJson, $author$project$Main$GotAccounts, decoder);
-	var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + 'accounts!A:A'));
+	var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (accountSheet + '!A:A')));
 	return A4($author$project$API$get, token, baseURL, queryParams, expect);
 };
 var $author$project$Main$getGlobals = function (model) {
-	return {accounts: model.accounts, sheetError: model.sheetError, sheetId: model.sheetId, token: model.auth.token};
+	return {accountSheet: model.sheetSettings.accountSheet, accounts: model.accounts, expenseSheet: model.sheetSettings.expenseSheet, sheetError: model.sheetError, sheetId: model.sheetSettings.sheetId, token: model.auth.token};
 };
 var $author$project$Main$SetToastMsg = function (a) {
 	return {$: 'SetToastMsg', a: a};
@@ -6370,31 +6400,7 @@ var $author$project$Main$logOut = _Platform_outgoingPort(
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$json$Json$Encode$list = F2(
-	function (func, entries) {
-		return _Json_wrap(
-			A3(
-				$elm$core$List$foldl,
-				_Json_addEntry(func),
-				_Json_emptyArray(_Utils_Tuple0),
-				entries));
-	});
-var $author$project$Capacitor$saveToStorage = _Platform_outgoingPort(
-	'saveToStorage',
-	function ($) {
-		var a = $.a;
-		var b = $.b;
-		return A2(
-			$elm$json$Json$Encode$list,
-			$elm$core$Basics$identity,
-			_List_fromArray(
-				[
-					$elm$json$Json$Encode$string(a),
-					$elm$core$Basics$identity(b)
-				]));
-	});
 var $author$project$Auth$AuthError = function (a) {
 	return {$: 'AuthError', a: a};
 };
@@ -6487,6 +6493,29 @@ var $author$project$Auth$getNewAccessTokenFromRefreshToken = function (refreshTo
 			url: $author$project$Auth$authUrl
 		});
 };
+var $elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				$elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var $author$project$Capacitor$saveToStorage = _Platform_outgoingPort(
+	'saveToStorage',
+	function ($) {
+		var a = $.a;
+		var b = $.b;
+		return A2(
+			$elm$json$Json$Encode$list,
+			$elm$core$Basics$identity,
+			_List_fromArray(
+				[
+					$elm$json$Json$Encode$string(a),
+					$elm$core$Basics$identity(b)
+				]));
+	});
 var $author$project$Capacitor$showAlert = _Platform_outgoingPort(
 	'showAlert',
 	function ($) {
@@ -6611,6 +6640,7 @@ var $author$project$ExpenseTracker$saveExpense = F2(
 	function (model, _v0) {
 		var sheetId = _v0.sheetId;
 		var token = _v0.token;
+		var expenseSheet = _v0.expenseSheet;
 		var queryParams = _List_fromArray(
 			[
 				_Utils_Tuple2('valueInputOption', 'USER_ENTERED')
@@ -6631,13 +6661,14 @@ var $author$project$ExpenseTracker$saveExpense = F2(
 									[model.date, model.info, model.category, model.amount, model.account, model.notes])
 								])))
 					])));
-		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + ('expense!A:Z' + ':append')));
+		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
 		return A5($author$project$API$post, token, baseURL, queryParams, body, expect);
 	});
 var $author$project$ExpenseTracker$update = F3(
 	function (msg, model, _v0) {
 		var token = _v0.token;
 		var sheetId = _v0.sheetId;
+		var expenseSheet = _v0.expenseSheet;
 		switch (msg.$) {
 			case 'UpdateAccount':
 				var acc = msg.a;
@@ -6689,7 +6720,7 @@ var $author$project$ExpenseTracker$update = F3(
 					A2(
 						$author$project$ExpenseTracker$saveExpense,
 						model,
-						{sheetId: sheetId, token: token}));
+						{expenseSheet: expenseSheet, sheetId: sheetId, token: token}));
 			case 'SaveExpenseResponded':
 				var response = msg.a;
 				if (response.$ === 'Ok') {
@@ -6723,6 +6754,7 @@ var $author$project$IncomePage$saveIncome = F2(
 	function (_v0, model) {
 		var token = _v0.token;
 		var sheetId = _v0.sheetId;
+		var expenseSheet = _v0.expenseSheet;
 		var queryParams = _List_fromArray(
 			[
 				_Utils_Tuple2('valueInputOption', 'USER_ENTERED')
@@ -6743,7 +6775,7 @@ var $author$project$IncomePage$saveIncome = F2(
 									[model.date, model.info, 'income', '-' + model.amount, model.intoAccount, model.notes])
 								])))
 					])));
-		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + ('expense!A:Z' + ':append')));
+		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
 		return A5($author$project$API$post, token, baseURL, queryParams, body, expect);
 	});
 var $author$project$IncomePage$update = F3(
@@ -6815,6 +6847,60 @@ var $author$project$IncomePage$update = F3(
 				}
 		}
 	});
+var $author$project$SettingsPage$saveSheetSettings = function (model) {
+	return $elm$core$Platform$Cmd$batch(
+		_List_fromArray(
+			[
+				$author$project$Capacitor$saveToStorage(
+				_Utils_Tuple2(
+					'sheetId',
+					$elm$json$Json$Encode$string(model.sheetId))),
+				$author$project$Capacitor$saveToStorage(
+				_Utils_Tuple2(
+					'accountSheet',
+					$elm$json$Json$Encode$string(model.accountSheet))),
+				$author$project$Capacitor$saveToStorage(
+				_Utils_Tuple2(
+					'expenseSheet',
+					$elm$json$Json$Encode$string(model.expenseSheet)))
+			]));
+};
+var $author$project$SettingsPage$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'UpdateSheetId':
+				var id = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{sheetId: id}),
+					$elm$core$Platform$Cmd$none);
+			case 'UpdateAccountSheetName':
+				var name = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{accountSheet: name}),
+					$elm$core$Platform$Cmd$none);
+			case 'UpdateExpenseSheetName':
+				var name = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{expenseSheet: name}),
+					$elm$core$Platform$Cmd$none);
+			case 'GoToHomePage':
+				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			case 'SaveSheetSettings':
+				return _Utils_Tuple2(
+					model,
+					$author$project$SettingsPage$saveSheetSettings(model));
+			default:
+				return _Utils_Tuple2(
+					model,
+					$author$project$Ports$getSheetSettingsFromStorage(_Utils_Tuple0));
+		}
+	});
 var $author$project$TransferPage$GoToHomePage = {$: 'GoToHomePage'};
 var $author$project$TransferPage$Saving = {$: 'Saving'};
 var $author$project$TransferPage$SaveTransferDone = function (a) {
@@ -6823,6 +6909,7 @@ var $author$project$TransferPage$SaveTransferDone = function (a) {
 var $author$project$TransferPage$saveTransfer = F2(
 	function (model, _v0) {
 		var token = _v0.token;
+		var expenseSheet = _v0.expenseSheet;
 		var sheetId = _v0.sheetId;
 		var queryParams = _List_fromArray(
 			[
@@ -6846,7 +6933,7 @@ var $author$project$TransferPage$saveTransfer = F2(
 									[model.date, model.info, 'transfer', '-' + model.amount, model.toAccount, model.notes])
 								])))
 					])));
-		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + ('expense!A:Z' + ':append')));
+		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
 		return A5($author$project$API$post, token, baseURL, queryParams, body, expect);
 	});
 var $author$project$TransferPage$update = F3(
@@ -7006,7 +7093,7 @@ var $author$project$Main$update = F2(
 										[
 											cmd_,
 											$author$project$Main$getAccounts(
-											{sheetId: model.sheetId, token: m.token})
+											{accountSheet: model.sheetSettings.accountSheet, sheetId: model.sheetSettings.sheetId, token: m.token})
 										])));
 					}
 				case 'HomePageMsg':
@@ -7037,9 +7124,11 @@ var $author$project$Main$update = F2(
 									{currentPage: $author$project$Main$IncomePage}),
 								$elm$core$Platform$Cmd$none);
 						default:
-							return _Utils_Tuple2(
-								model,
-								$author$project$Main$logOut(_Utils_Tuple0));
+							var $temp$msg = $author$project$Main$Logout,
+								$temp$model = model;
+							msg = $temp$msg;
+							model = $temp$model;
+							continue update;
 					}
 				case 'ExpenseTrackerPageMsg':
 					var expenseTrackerMsg = msg.a;
@@ -7047,7 +7136,7 @@ var $author$project$Main$update = F2(
 						$author$project$ExpenseTracker$update,
 						expenseTrackerMsg,
 						model.expenseTracker,
-						{sheetId: model.sheetId, token: model.auth.token});
+						{expenseSheet: model.sheetSettings.expenseSheet, sheetId: model.sheetSettings.sheetId, token: model.auth.token});
 					var m = _v5.a;
 					var cmd = _v5.b;
 					var cmd_ = A2($elm$core$Platform$Cmd$map, $author$project$Main$ExpenseTrackerPageMsg, cmd);
@@ -7093,38 +7182,39 @@ var $author$project$Main$update = F2(
 									{expenseTracker: m}),
 								cmd_);
 					}
-				case 'UpdateSheetId':
-					var id = msg.a;
-					return A2(
-						$elm$core$Tuple$pair,
-						_Utils_update(
-							model,
-							{sheetError: '', sheetId: id}),
-						$elm$core$Platform$Cmd$batch(
-							_List_fromArray(
-								[
-									$author$project$Capacitor$saveToStorage(
-									_Utils_Tuple2(
-										'sheetId',
-										$elm$json$Json$Encode$string(id))),
-									((id !== '') && (model.auth.token !== '')) ? $author$project$Main$getAccounts(
-									{sheetId: id, token: model.auth.token}) : $elm$core$Platform$Cmd$none
-								])));
 				case 'SettingsPageMsg':
 					var settingsPageMsg = msg.a;
-					if (settingsPageMsg.$ === 'UpdateSheetId') {
-						var id = settingsPageMsg.a;
-						var $temp$msg = $author$project$Main$UpdateSheetId(id),
-							$temp$model = model;
-						msg = $temp$msg;
-						model = $temp$model;
-						continue update;
-					} else {
-						var $temp$msg = $author$project$Main$GoTo($author$project$Main$HomePage),
-							$temp$model = model;
-						msg = $temp$msg;
-						model = $temp$model;
-						continue update;
+					var _v8 = A2($author$project$SettingsPage$update, settingsPageMsg, model.sheetSettings);
+					var m = _v8.a;
+					var cmd = _v8.b;
+					var newCmd = A2($elm$core$Platform$Cmd$map, $author$project$Main$SettingsPageMsg, cmd);
+					var newModel = _Utils_update(
+						model,
+						{sheetSettings: m});
+					switch (settingsPageMsg.$) {
+						case 'GoToHomePage':
+							var $temp$msg = $author$project$Main$GoTo($author$project$Main$HomePage),
+								$temp$model = newModel;
+							msg = $temp$msg;
+							model = $temp$model;
+							continue update;
+						case 'SaveSheetSettings':
+							return _Utils_Tuple2(
+								_Utils_update(
+									newModel,
+									{
+										toastMsg: $elm$core$Maybe$Just('Saved!')
+									}),
+								$elm$core$Platform$Cmd$batch(
+									_List_fromArray(
+										[
+											newCmd,
+											$author$project$Main$getAccounts(
+											{accountSheet: m.accountSheet, sheetId: m.sheetId, token: model.auth.token}),
+											$author$project$Main$hideToastMessage(5)
+										])));
+						default:
+							return _Utils_Tuple2(newModel, newCmd);
 					}
 				case 'GotAccounts':
 					var res = msg.a;
@@ -7143,7 +7233,7 @@ var $author$project$Main$update = F2(
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
-								{accounts: _List_Nil, sheetError: 'Could not get accounts for the given sheetID. Please check if the sheetID is correct.'}),
+								{accounts: _List_Nil, sheetError: 'Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct.'}),
 							$elm$core$Platform$Cmd$batch(_List_Nil));
 					}
 				case 'SetToastMsg':
@@ -7154,8 +7244,8 @@ var $author$project$Main$update = F2(
 							{toastMsg: message}),
 						$author$project$Main$hideToastMessage(5));
 				case 'GoBack':
-					var _v10 = model.currentPage;
-					switch (_v10.$) {
+					var _v11 = model.currentPage;
+					switch (_v11.$) {
 						case 'HomePage':
 							return _Utils_Tuple2(
 								model,
@@ -7184,13 +7274,13 @@ var $author$project$Main$update = F2(
 					}
 				case 'TransferPageMsg':
 					var tpMsg = msg.a;
-					var _v11 = A3(
+					var _v12 = A3(
 						$author$project$TransferPage$update,
 						tpMsg,
 						model.transferPage,
 						$author$project$Main$getGlobals(model));
-					var m = _v11.a;
-					var cmd = _v11.b;
+					var m = _v12.a;
+					var cmd = _v12.b;
 					var cmd_ = A2($elm$core$Platform$Cmd$map, $author$project$Main$TransferPageMsg, cmd);
 					switch (tpMsg.$) {
 						case 'GoToHomePage':
@@ -7231,15 +7321,15 @@ var $author$project$Main$update = F2(
 									{transferPage: m}),
 								cmd_);
 					}
-				default:
+				case 'IncomePageMsg':
 					var ipMsg = msg.a;
-					var _v14 = A3(
+					var _v15 = A3(
 						$author$project$IncomePage$update,
 						$author$project$Main$getGlobals(model),
 						ipMsg,
 						model.incomePage);
-					var m = _v14.a;
-					var cmd = _v14.b;
+					var m = _v15.a;
+					var cmd = _v15.b;
 					var cmd_ = A2($elm$core$Platform$Cmd$map, $author$project$Main$IncomePageMsg, cmd);
 					switch (ipMsg.$) {
 						case 'GoToHomePage':
@@ -7278,22 +7368,35 @@ var $author$project$Main$update = F2(
 									{incomePage: m}),
 								cmd_);
 					}
+				case 'Logout':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{accounts: _List_Nil, auth: $author$project$Auth$init, currentPage: $author$project$Main$Login}),
+						$author$project$Main$logOut(_Utils_Tuple0));
+				default:
+					var _v18 = msg.a;
+					var sheetId = _v18.a;
+					var accountSheet = _v18.b;
+					var expenseSheet = _v18.c;
+					var sheetSettings = A3($author$project$SettingsPage$Model, sheetId, accountSheet, expenseSheet);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{sheetSettings: sheetSettings}),
+						$author$project$Main$getAccounts(
+							{accountSheet: accountSheet, sheetId: sheetId, token: model.auth.token}));
 			}
 		}
 	});
-var $author$project$Page$Global = F4(
-	function (token, sheetId, accounts, sheetError) {
-		return {accounts: accounts, sheetError: sheetError, sheetId: sheetId, token: token};
+var $author$project$Page$Global = F6(
+	function (token, sheetId, accounts, sheetError, accountSheet, expenseSheet) {
+		return {accountSheet: accountSheet, accounts: accounts, expenseSheet: expenseSheet, sheetError: sheetError, sheetId: sheetId, token: token};
 	});
 var $author$project$Main$HomePageMsg = function (a) {
 	return {$: 'HomePageMsg', a: a};
 };
-var $author$project$Main$SettingsPageMsg = function (a) {
-	return {$: 'SettingsPageMsg', a: a};
-};
-var $elm$html$Html$div = _VirtualDom_node('div');
-var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
-var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
+var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -7302,6 +7405,26 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 			$elm$json$Json$Encode$string(string));
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Page$pageLoaderDiv = A2(
@@ -7314,6 +7437,18 @@ var $author$project$Page$pageLoaderDiv = A2(
 		[
 			$elm$html$Html$text('Loading...')
 		]));
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $author$project$Page$renderBody = function (content) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$id('app-page-content')
+			]),
+		_List_fromArray(
+			[content]));
+};
+var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
 var $feathericons$elm_feather$FeatherIcons$Icon = function (a) {
 	return {$: 'Icon', a: a};
@@ -7359,34 +7494,6 @@ var $feathericons$elm_feather$FeatherIcons$home = A2(
 				]),
 			_List_Nil)
 		]));
-var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
-var $author$project$Page$renderBody = function (content) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$id('app-page-content')
-			]),
-		_List_fromArray(
-			[content]));
-};
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
 var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
 var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
 var $elm$core$String$fromFloat = _String_fromNumber;
@@ -7517,6 +7624,9 @@ var $author$project$ExpenseTracker$showError = function (error) {
 			]));
 };
 var $author$project$ExpenseTracker$SaveExpense = {$: 'SaveExpense'};
+var $author$project$ExpenseTracker$UpdateAccount = function (a) {
+	return {$: 'UpdateAccount', a: a};
+};
 var $author$project$ExpenseTracker$UpdateAmount = function (a) {
 	return {$: 'UpdateAmount', a: a};
 };
@@ -7532,7 +7642,6 @@ var $author$project$ExpenseTracker$UpdateInfo = function (a) {
 var $author$project$ExpenseTracker$UpdateNotes = function (a) {
 	return {$: 'UpdateNotes', a: a};
 };
-var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$core$List$append = F2(
 	function (xs, ys) {
 		if (!ys.b) {
@@ -7544,7 +7653,6 @@ var $elm$core$List$append = F2(
 var $elm$core$List$concat = function (lists) {
 	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
 };
-var $elm$html$Html$datalist = _VirtualDom_node('datalist');
 var $elm$json$Json$Encode$bool = _Json_wrap;
 var $elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
@@ -7636,7 +7744,6 @@ var $author$project$ExpenseTracker$isExpenseFormValid = function (expense) {
 	}();
 	return nothingIsEmpty && amountIsValidNumber;
 };
-var $elm$html$Html$Attributes$list = _VirtualDom_attribute('list');
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
@@ -7669,6 +7776,7 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
 var $elm$html$Html$option = _VirtualDom_node('option');
+var $elm$html$Html$select = _VirtualDom_node('select');
 var $elm$html$Html$Attributes$selected = $elm$html$Html$Attributes$boolProperty('selected');
 var $elm$html$Html$textarea = _VirtualDom_node('textarea');
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
@@ -7727,49 +7835,35 @@ var $author$project$ExpenseTracker$viewForm = F2(
 							$author$project$Page$formElement,
 							'Which account from?',
 							A2(
-								$elm$html$Html$div,
-								_List_Nil,
+								$elm$html$Html$select,
 								_List_fromArray(
 									[
-										A2(
-										$elm$html$Html$input,
+										$elm$html$Html$Events$onInput($author$project$ExpenseTracker$UpdateAccount)
+									]),
+								A2(
+									$elm$core$List$map,
+									function (account) {
+										return A2(
+											$elm$html$Html$option,
+											_List_fromArray(
+												[
+													$elm$html$Html$Attributes$value(account),
+													$elm$html$Html$Attributes$selected(
+													_Utils_eq(account, model.account))
+												]),
+											_List_fromArray(
+												[
+													$elm$html$Html$text(
+													(account === '') ? 'Select account' : account)
+												]));
+									},
+									$elm$core$List$concat(
 										_List_fromArray(
 											[
-												$elm$html$Html$Attributes$list('accounts'),
-												$elm$html$Html$Attributes$value(model.account)
-											]),
-										_List_Nil),
-										A2(
-										$elm$html$Html$datalist,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$id('accounts')
-											]),
-										A2(
-											$elm$core$List$map,
-											function (account) {
-												return A2(
-													$elm$html$Html$option,
-													_List_fromArray(
-														[
-															$elm$html$Html$Attributes$value(account),
-															$elm$html$Html$Attributes$selected(
-															_Utils_eq(account, model.account))
-														]),
-													_List_fromArray(
-														[
-															$elm$html$Html$text(
-															(account === '') ? 'Select account' : account)
-														]));
-											},
-											$elm$core$List$concat(
 												_List_fromArray(
-													[
-														_List_fromArray(
-														['']),
-														accounts
-													]))))
-									]))),
+												['']),
+												accounts
+											]))))),
 							A2(
 							$author$project$Page$formElement,
 							'Category? (optional)',
@@ -8150,7 +8244,6 @@ var $author$project$IncomePage$pageRenderer = function (content) {
 			]));
 };
 var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
-var $elm$html$Html$select = _VirtualDom_node('select');
 var $author$project$IncomePage$view = F2(
 	function (globals, model) {
 		return $author$project$IncomePage$pageRenderer(
@@ -8277,6 +8370,14 @@ var $author$project$IncomePage$view = F2(
 							]))
 					])));
 	});
+var $author$project$SettingsPage$Reset = {$: 'Reset'};
+var $author$project$SettingsPage$SaveSheetSettings = {$: 'SaveSheetSettings'};
+var $author$project$SettingsPage$UpdateAccountSheetName = function (a) {
+	return {$: 'UpdateAccountSheetName', a: a};
+};
+var $author$project$SettingsPage$UpdateExpenseSheetName = function (a) {
+	return {$: 'UpdateExpenseSheetName', a: a};
+};
 var $author$project$SettingsPage$UpdateSheetId = function (a) {
 	return {$: 'UpdateSheetId', a: a};
 };
@@ -8292,11 +8393,17 @@ var $author$project$SettingsPage$pageWrapper = function (body) {
 				$author$project$Page$renderBody(body)
 			]));
 };
-var $author$project$SettingsPage$view = function (sheetId) {
+var $author$project$SettingsPage$view = function (_v0) {
+	var sheetId = _v0.sheetId;
+	var accountSheet = _v0.accountSheet;
+	var expenseSheet = _v0.expenseSheet;
 	return $author$project$SettingsPage$pageWrapper(
 		A2(
 			$elm$html$Html$div,
-			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('flex flex-col gap-10')
+				]),
 			_List_fromArray(
 				[
 					A2(
@@ -8309,7 +8416,59 @@ var $author$project$SettingsPage$view = function (sheetId) {
 								$elm$html$Html$Attributes$value(sheetId),
 								$elm$html$Html$Events$onInput($author$project$SettingsPage$UpdateSheetId)
 							]),
-						_List_Nil))
+						_List_Nil)),
+					A2(
+					$author$project$Page$formElement,
+					'Accounts sheet name:',
+					A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$value(accountSheet),
+								$elm$html$Html$Events$onInput($author$project$SettingsPage$UpdateAccountSheetName)
+							]),
+						_List_Nil)),
+					A2(
+					$author$project$Page$formElement,
+					'Expenses sheet name:',
+					A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$value(expenseSheet),
+								$elm$html$Html$Events$onInput($author$project$SettingsPage$UpdateExpenseSheetName)
+							]),
+						_List_Nil)),
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('flex justify-around gap-4')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('primary'),
+									$elm$html$Html$Events$onClick($author$project$SettingsPage$SaveSheetSettings)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Save')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$SettingsPage$Reset)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Reset')
+								]))
+						]))
 				])));
 };
 var $author$project$TransferPage$SaveTransfer = {$: 'SaveTransfer'};
@@ -8584,13 +8743,13 @@ var $author$project$Main$view = function (model) {
 					$author$project$Main$ExpenseTrackerPageMsg,
 					A2(
 						$author$project$ExpenseTracker$view,
-						A4($author$project$Page$Global, model.auth.token, model.sheetId, model.accounts, model.sheetError),
+						A6($author$project$Page$Global, model.auth.token, model.sheetSettings.sheetId, model.accounts, model.sheetError, model.sheetSettings.accountSheet, model.sheetSettings.expenseSheet),
 						model.expenseTracker));
 			case 'SettingsPage':
 				return A2(
 					$elm$html$Html$map,
 					$author$project$Main$SettingsPageMsg,
-					$author$project$SettingsPage$view(model.sheetId));
+					$author$project$SettingsPage$view(model.sheetSettings));
 			case 'TransferPage':
 				return A2(
 					$elm$html$Html$map,
@@ -8613,7 +8772,34 @@ var $author$project$Main$view = function (model) {
 					_List_Nil,
 					_List_fromArray(
 						[
-							$elm$html$Html$text('Catastrophic error page')
+							$author$project$Page$renderBody(
+							A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('flex flex-col gap-10')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Something went wrong catastrophically. Try logging in again.'),
+										A2(
+										$elm$html$Html$div,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$button,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('primary'),
+														$elm$html$Html$Events$onClick($author$project$Main$Logout)
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Login again ->')
+													]))
+											]))
+									])))
 						]));
 		}
 	}();

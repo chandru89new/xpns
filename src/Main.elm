@@ -3,7 +3,6 @@ port module Main exposing (..)
 import API
 import Auth
 import Browser
-import Capacitor
 import ExpenseTracker exposing (clearExpenseTrackerData)
 import FeatherIcons as Icons
 import HomePage
@@ -13,8 +12,8 @@ import Html.Events as Ev
 import Http
 import IncomePage
 import Json.Decode as JsonD
-import Json.Encode as JsonE
 import Page
+import Ports
 import Process
 import Set
 import SettingsPage
@@ -39,7 +38,7 @@ type alias Model =
     , transferPage : TransferPage.Model
     , incomePage : IncomePage.Model
     , auth : Auth.Model
-    , sheetId : String
+    , sheetSettings : SettingsPage.Model
     , sheetError : String
     , toastMsg : Maybe String
     }
@@ -59,7 +58,6 @@ type Page
 type Msg
     = NoOp
     | DoLogin
-    | UpdateSheetId String
     | GoTo Page
     | GoBack
     | GotAccounts (Result Http.Error (List String))
@@ -70,6 +68,8 @@ type Msg
     | TransferPageMsg TransferPage.Msg
     | SettingsPageMsg SettingsPage.Msg
     | IncomePageMsg IncomePage.Msg
+    | ReceiveSheetSettingsFromStorage ( String, String, String )
+    | Logout
 
 
 init : () -> ( Model, Cmd Msg )
@@ -80,7 +80,7 @@ init _ =
         , expenseTracker = ExpenseTracker.init
         , accounts = []
         , auth = Auth.init
-        , sheetId = ""
+        , sheetSettings = SettingsPage.init
         , sheetError = ""
         , transferPage = TransferPage.init
         , toastMsg = Nothing
@@ -90,7 +90,7 @@ init _ =
         }
         (Cmd.batch
             [ Cmd.map AuthMsg <| Auth.checkForRefreshToken ()
-            , getSheetIdFromStorage ()
+            , Ports.getSheetSettingsFromStorage ()
             ]
         )
 
@@ -158,7 +158,8 @@ update msg model =
                             [ cmd_
                             , getAccounts
                                 { token = m.token
-                                , sheetId = model.sheetId
+                                , sheetId = model.sheetSettings.sheetId
+                                , accountSheet = model.sheetSettings.accountSheet
                                 }
                             ]
                         )
@@ -178,12 +179,12 @@ update msg model =
                     ( { model | currentPage = IncomePage }, Cmd.none )
 
                 HomePage.Logout ->
-                    ( model, logOut () )
+                    update Logout model
 
         ExpenseTrackerPageMsg expenseTrackerMsg ->
             let
                 ( m, cmd ) =
-                    ExpenseTracker.update expenseTrackerMsg model.expenseTracker { token = model.auth.token, sheetId = model.sheetId }
+                    ExpenseTracker.update expenseTrackerMsg model.expenseTracker { token = model.auth.token, sheetId = model.sheetSettings.sheetId, expenseSheet = model.sheetSettings.expenseSheet }
 
                 cmd_ =
                     Cmd.map ExpenseTrackerPageMsg <| cmd
@@ -212,27 +213,36 @@ update msg model =
                         { model | expenseTracker = m }
                         cmd_
 
-        UpdateSheetId id ->
-            Tuple.pair
-                { model | sheetId = id, sheetError = "" }
-            <|
-                Cmd.batch
-                    [ Capacitor.saveToStorage
-                        ( "sheetId", JsonE.string id )
-                    , if id /= "" && model.auth.token /= "" then
-                        getAccounts { token = model.auth.token, sheetId = id }
-
-                      else
-                        Cmd.none
-                    ]
-
         SettingsPageMsg settingsPageMsg ->
-            case settingsPageMsg of
-                SettingsPage.UpdateSheetId id ->
-                    update (UpdateSheetId id) model
+            let
+                ( m, cmd ) =
+                    SettingsPage.update settingsPageMsg model.sheetSettings
 
+                newModel =
+                    { model | sheetSettings = m }
+
+                newCmd =
+                    Cmd.map SettingsPageMsg cmd
+            in
+            case settingsPageMsg of
                 SettingsPage.GoToHomePage ->
-                    update (GoTo HomePage) model
+                    update (GoTo HomePage) newModel
+
+                SettingsPage.SaveSheetSettings ->
+                    ( { newModel | toastMsg = Just "Saved!" }
+                    , Cmd.batch
+                        [ newCmd
+                        , getAccounts
+                            { token = model.auth.token
+                            , sheetId = m.sheetId
+                            , accountSheet = m.accountSheet
+                            }
+                        , hideToastMessage 5
+                        ]
+                    )
+
+                _ ->
+                    ( newModel, newCmd )
 
         GotAccounts res ->
             case res of
@@ -240,7 +250,7 @@ update msg model =
                     ( { model | accounts = accs |> Set.fromList |> Set.toList, sheetError = "" }, Cmd.none )
 
                 Err _ ->
-                    ( { model | accounts = [], sheetError = "Could not get accounts for the given sheetID. Please check if the sheetID is correct." }
+                    ( { model | accounts = [], sheetError = "Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct." }
                     , Cmd.batch
                         []
                     )
@@ -323,12 +333,34 @@ update msg model =
                 _ ->
                     ( { model | incomePage = m }, cmd_ )
 
+        Logout ->
+            ( { model
+                | accounts = []
+                , auth = Auth.init
+                , currentPage = Login
+              }
+            , logOut ()
+            )
+
+        ReceiveSheetSettingsFromStorage ( sheetId, accountSheet, expenseSheet ) ->
+            let
+                sheetSettings =
+                    SettingsPage.Model sheetId accountSheet expenseSheet
+            in
+            ( { model | sheetSettings = sheetSettings }
+            , getAccounts
+                { token = model.auth.token
+                , sheetId = sheetId
+                , accountSheet = accountSheet
+                }
+            )
+
 
 subscriptions _ =
     Sub.batch
         [ Sub.map AuthMsg <| Auth.receiveRefreshToken Auth.ReceiveRefreshToken
         , Sub.map AuthMsg <| Auth.receiveAuthCode Auth.ReceiveAuthCode
-        , receiveSheetIdFromStorage UpdateSheetId
+        , receiveSheetSettingsFromStorage ReceiveSheetSettingsFromStorage
         , goBack (\_ -> GoBack)
         ]
 
@@ -348,11 +380,11 @@ view model =
                     HomePage.view |> H.map HomePageMsg
 
                 ExpenseTrackerPage ->
-                    ExpenseTracker.view (Page.Global model.auth.token model.sheetId model.accounts model.sheetError) model.expenseTracker
+                    ExpenseTracker.view (Page.Global model.auth.token model.sheetSettings.sheetId model.accounts model.sheetError model.sheetSettings.accountSheet model.sheetSettings.expenseSheet) model.expenseTracker
                         |> H.map ExpenseTrackerPageMsg
 
                 SettingsPage ->
-                    SettingsPage.view model.sheetId |> H.map SettingsPageMsg
+                    SettingsPage.view model.sheetSettings |> H.map SettingsPageMsg
 
                 TransferPage ->
                     TransferPage.view (getGlobals model) model.transferPage |> H.map TransferPageMsg
@@ -361,7 +393,21 @@ view model =
                     IncomePage.view (getGlobals model) model.incomePage |> H.map IncomePageMsg
 
                 GlobalError ->
-                    H.div [] [ H.text "Catastrophic error page" ]
+                    H.div []
+                        [ Page.renderBody <|
+                            H.div
+                                [ Attr.class "flex flex-col gap-10"
+                                ]
+                                [ H.text "Something went wrong catastrophically. Try logging in again."
+                                , H.div []
+                                    [ H.button
+                                        [ Attr.class "primary"
+                                        , Ev.onClick Logout
+                                        ]
+                                        [ H.text "Login again ->" ]
+                                    ]
+                                ]
+                        ]
     in
     H.div []
         [ pageContent
@@ -393,15 +439,15 @@ renderDebug model =
         [ H.text <| Debug.toString model ]
 
 
-getAccounts : { token : String, sheetId : String } -> Cmd Msg
-getAccounts { token, sheetId } =
+getAccounts : { token : String, sheetId : String, accountSheet : String } -> Cmd Msg
+getAccounts { token, sheetId, accountSheet } =
     let
         decoder =
             JsonD.field "values" (JsonD.list (JsonD.list JsonD.string))
                 |> JsonD.map (List.head >> Maybe.withDefault [])
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ "accounts!A:A"
+            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ accountSheet ++ "!A:A"
 
         expect =
             Http.expectJson GotAccounts decoder
@@ -416,8 +462,10 @@ getGlobals : Model -> Page.Global
 getGlobals model =
     { accounts = model.accounts
     , sheetError = model.sheetError
-    , sheetId = model.sheetId
+    , sheetId = model.sheetSettings.sheetId
     , token = model.auth.token
+    , accountSheet = model.sheetSettings.accountSheet
+    , expenseSheet = model.sheetSettings.expenseSheet
     }
 
 
@@ -437,10 +485,7 @@ hideToastMessage seconds =
 port exitApp : () -> Cmd msg
 
 
-port receiveSheetIdFromStorage : (String -> msg) -> Sub msg
-
-
-port getSheetIdFromStorage : () -> Cmd msg
+port receiveSheetSettingsFromStorage : (( String, String, String ) -> msg) -> Sub msg
 
 
 port logOut : () -> Cmd msg

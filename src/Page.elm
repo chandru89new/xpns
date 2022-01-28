@@ -93,7 +93,13 @@ type alias Error =
 
 
 type alias Global =
-    { token : String, sheetId : String, accounts : List String, sheetError : Error }
+    { token : String
+    , sheetId : String
+    , accounts : List String
+    , sheetError : Error
+    , accountSheet : String
+    , expenseSheet : String
+    }
 
 
 initGlobal =

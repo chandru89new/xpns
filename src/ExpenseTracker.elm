@@ -55,14 +55,16 @@ type Msg
     | GoToHomePage
 
 
-type alias Global =
-    { token : String
-    , sheetId : String
+type alias Global a =
+    { a
+        | token : String
+        , sheetId : String
+        , expenseSheet : String
     }
 
 
-update : Msg -> Model -> Global -> ( Model, Cmd Msg )
-update msg model { token, sheetId } =
+update : Msg -> Model -> Global a -> ( Model, Cmd Msg )
+update msg model { token, sheetId, expenseSheet } =
     case msg of
         UpdateAccount acc ->
             ( { model | account = acc }, Cmd.none )
@@ -87,7 +89,7 @@ update msg model { token, sheetId } =
                 ( model, Cmd.none )
 
             else
-                ( { model | pageState = Saving }, saveExpense model { sheetId = sheetId, token = token } )
+                ( { model | pageState = Saving }, saveExpense model { sheetId = sheetId, token = token, expenseSheet = expenseSheet } )
 
         SaveExpenseResponded response ->
             case response of
@@ -268,8 +270,8 @@ showError error =
         [ H.text error ]
 
 
-saveExpense : Model -> Global -> Cmd Msg
-saveExpense model { sheetId, token } =
+saveExpense : Model -> Global a -> Cmd Msg
+saveExpense model { sheetId, token, expenseSheet } =
     let
         body =
             Http.jsonBody <|
@@ -285,7 +287,7 @@ saveExpense model { sheetId, token } =
             Http.expectWhatever SaveExpenseResponded
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ "expense!A:Z" ++ ":append"
+            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append"
     in
     API.post token baseURL queryParams body expect
 
