@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import API
+import AccountsPage
 import Auth
 import Browser
 import ExpenseTracker exposing (clearExpenseTrackerData)
@@ -43,6 +44,7 @@ type alias Model =
     , sheetError : String
     , toastMsg : Maybe String
     , recentsPage : RecentsPage.Model
+    , accountsPage : AccountsPage.Model
     }
 
 
@@ -56,6 +58,7 @@ type Page
     | IncomePage
     | GlobalError
     | RecentsPage
+    | AccountsPage
 
 
 type Msg
@@ -74,6 +77,7 @@ type Msg
     | ReceiveSheetSettingsFromStorage ( String, String, String )
     | Logout
     | RecentsPageMsg RecentsPage.Msg
+    | AccountsPageMsg AccountsPage.Msg
 
 
 init : () -> ( Model, Cmd Msg )
@@ -90,6 +94,7 @@ init _ =
         , toastMsg = Nothing
         , incomePage = IncomePage.init
         , recentsPage = RecentsPage.init
+        , accountsPage = AccountsPage.init
 
         --sheetId = "1E-XVfWRerpSjdtey0U4NdVL2A00NBacLvmGgHTX6VeU"
         }
@@ -130,7 +135,7 @@ update msg model =
                     )
 
                 RecentsPage ->
-                    ( { model | currentPage = RecentsPage, recentsPage = RecentsPage.init }, Cmd.map RecentsPageMsg (RecentsPage.loadTransactions (getGlobals model)) )
+                    ( { model | currentPage = RecentsPage, recentsPage = RecentsPage.init }, Cmd.map RecentsPageMsg <| Page.msgToCmd RecentsPage.LoadTransactions )
 
                 IncomePage ->
                     ( { model | currentPage = IncomePage }, Cmd.none )
@@ -146,6 +151,11 @@ update msg model =
 
                 GlobalError ->
                     ( model, Cmd.none )
+
+                AccountsPage ->
+                    ( { model | currentPage = AccountsPage, accountsPage = AccountsPage.init }
+                    , Cmd.map AccountsPageMsg <| Page.msgToCmd AccountsPage.LoadAccounts
+                    )
 
         AuthMsg authMsg ->
             let
@@ -203,6 +213,9 @@ update msg model =
 
                 HomePage.Logout ->
                     update Logout model
+
+                HomePage.GoToAccountsPage ->
+                    update (GoTo AccountsPage) model
 
         ExpenseTrackerPageMsg expenseTrackerMsg ->
             let
@@ -396,6 +409,24 @@ update msg model =
                 _ ->
                     ( m_, cmd_ )
 
+        AccountsPageMsg accPageMsg ->
+            let
+                ( m, cmd ) =
+                    AccountsPage.update (getGlobals model) accPageMsg model.accountsPage
+
+                cmd_ =
+                    Cmd.map AccountsPageMsg cmd
+
+                m_ =
+                    { model | accountsPage = m }
+            in
+            case accPageMsg of
+                AccountsPage.GoToHomePage ->
+                    ( { m_ | currentPage = HomePage }, cmd_ )
+
+                _ ->
+                    ( m_, cmd_ )
+
 
 subscriptions _ =
     Sub.batch
@@ -453,6 +484,10 @@ view model =
                 RecentsPage ->
                     RecentsPage.view model.recentsPage
                         |> H.map RecentsPageMsg
+
+                AccountsPage ->
+                    AccountsPage.view model.accountsPage
+                        |> H.map AccountsPageMsg
     in
     H.div []
         [ pageContent

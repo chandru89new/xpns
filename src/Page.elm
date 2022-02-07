@@ -1,11 +1,11 @@
 module Page exposing (..)
 
-import Auth exposing (Msg)
 import FeatherIcons
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
-import Process
+import Http
+import Task
 
 
 formElement : String -> Html msg -> Html msg
@@ -105,3 +105,24 @@ type alias Global =
 
 initGlobal =
     Global "" "" [] ""
+
+
+msgToCmd : msg -> Cmd msg
+msgToCmd msg =
+    Task.perform (\_ -> msg) (Task.succeed 1)
+
+
+errToString : Http.Error -> String
+errToString e =
+    case e of
+        Http.BadUrl s ->
+            s
+
+        Http.BadStatus int ->
+            "Server responded with a bad status code: " ++ String.fromInt int
+
+        Http.BadBody s ->
+            s
+
+        _ ->
+            "Weird. Inexplicable error occured!"

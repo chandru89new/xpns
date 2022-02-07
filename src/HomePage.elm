@@ -23,6 +23,7 @@ type Msg
     | GoToTransferPage
     | GoToIncomePage
     | GoToRecentsPage
+    | GoToAccountsPage
     | Logout
 
 
@@ -58,6 +59,7 @@ view =
                 , renderOption FeatherIcons.dollarSign "Income" GoToIncomePage
                 , renderOption FeatherIcons.refreshCw "Transfer" GoToTransferPage
                 , renderOption FeatherIcons.activity "Recent" GoToRecentsPage
+                , renderOption FeatherIcons.fileText "Balances" GoToAccountsPage
                 , renderOption FeatherIcons.logOut "Logout" Logout
                 ]
         ]

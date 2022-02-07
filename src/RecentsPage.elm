@@ -42,25 +42,9 @@ update globals msg model =
             ( model, Cmd.none )
 
         TransactionsLoaded res ->
-            let
-                errToString : Http.Error -> String
-                errToString e =
-                    case e of
-                        Http.BadUrl s ->
-                            s
-
-                        Http.BadStatus int ->
-                            "Server responded with a bad status code: " ++ String.fromInt int
-
-                        Http.BadBody s ->
-                            s
-
-                        _ ->
-                            "Weird. Inexplicable error occured!"
-            in
             case res of
                 Err e ->
-                    ( { model | transactions = ErrorMsg <| errToString e }, Cmd.none )
+                    ( { model | transactions = ErrorMsg <| Page.errToString e }, Cmd.none )
 
                 Ok list ->
                     ( { model | transactions = Transactions (list |> List.reverse |> List.take 10) }, Cmd.none )
