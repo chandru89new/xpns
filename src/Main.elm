@@ -15,6 +15,7 @@ import Json.Decode as JsonD
 import Page
 import Ports
 import Process
+import RecentsPage
 import Set
 import SettingsPage
 import Task
@@ -41,6 +42,7 @@ type alias Model =
     , sheetSettings : SettingsPage.Model
     , sheetError : String
     , toastMsg : Maybe String
+    , recentsPage : RecentsPage.Model
     }
 
 
@@ -53,6 +55,7 @@ type Page
     | TransferPage
     | IncomePage
     | GlobalError
+    | RecentsPage
 
 
 type Msg
@@ -70,6 +73,7 @@ type Msg
     | IncomePageMsg IncomePage.Msg
     | ReceiveSheetSettingsFromStorage ( String, String, String )
     | Logout
+    | RecentsPageMsg RecentsPage.Msg
 
 
 init : () -> ( Model, Cmd Msg )
@@ -85,6 +89,7 @@ init _ =
         , transferPage = TransferPage.init
         , toastMsg = Nothing
         , incomePage = IncomePage.init
+        , recentsPage = RecentsPage.init
 
         --sheetId = "1E-XVfWRerpSjdtey0U4NdVL2A00NBacLvmGgHTX6VeU"
         }
@@ -124,7 +129,22 @@ update msg model =
                     , Cmd.none
                     )
 
-                _ ->
+                RecentsPage ->
+                    ( { model | currentPage = RecentsPage, recentsPage = RecentsPage.init }, Cmd.map RecentsPageMsg (RecentsPage.loadTransactions (getGlobals model)) )
+
+                IncomePage ->
+                    ( { model | currentPage = IncomePage }, Cmd.none )
+
+                TransferPage ->
+                    ( { model | currentPage = TransferPage }, Cmd.none )
+
+                Loading ->
+                    ( model, Cmd.none )
+
+                Login ->
+                    ( model, Cmd.none )
+
+                GlobalError ->
                     ( model, Cmd.none )
 
         AuthMsg authMsg ->
@@ -170,13 +190,16 @@ update msg model =
                     update (GoTo ExpenseTrackerPage) model
 
                 HomePage.GoToTransferPage ->
-                    ( { model | currentPage = TransferPage }, Cmd.none )
+                    update (GoTo TransferPage) model
 
                 HomePage.GoToSettingsPage ->
-                    ( { model | currentPage = SettingsPage }, Cmd.none )
+                    update (GoTo SettingsPage) model
 
                 HomePage.GoToIncomePage ->
-                    ( { model | currentPage = IncomePage }, Cmd.none )
+                    update (GoTo IncomePage) model
+
+                HomePage.GoToRecentsPage ->
+                    update (GoTo RecentsPage) model
 
                 HomePage.Logout ->
                     update Logout model
@@ -355,6 +378,24 @@ update msg model =
                 }
             )
 
+        RecentsPageMsg recentsPageMsg ->
+            let
+                ( m, cmd ) =
+                    RecentsPage.update (getGlobals model) recentsPageMsg model.recentsPage
+
+                cmd_ =
+                    Cmd.map RecentsPageMsg cmd
+
+                m_ =
+                    { model | recentsPage = m }
+            in
+            case recentsPageMsg of
+                RecentsPage.GoToHomePage ->
+                    ( { m_ | currentPage = HomePage }, cmd_ )
+
+                _ ->
+                    ( m_, cmd_ )
+
 
 subscriptions _ =
     Sub.batch
@@ -408,6 +449,10 @@ view model =
                                     ]
                                 ]
                         ]
+
+                RecentsPage ->
+                    RecentsPage.view model.recentsPage
+                        |> H.map RecentsPageMsg
     in
     H.div []
         [ pageContent
@@ -445,6 +490,7 @@ getAccounts { token, sheetId, accountSheet } =
         decoder =
             JsonD.field "values" (JsonD.list (JsonD.list JsonD.string))
                 |> JsonD.map (List.head >> Maybe.withDefault [])
+                |> JsonD.map (List.drop 1)
 
         baseURL =
             "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ accountSheet ++ "!A:A"

@@ -22,6 +22,7 @@ type Msg
     | GoToSettingsPage
     | GoToTransferPage
     | GoToIncomePage
+    | GoToRecentsPage
     | Logout
 
 
@@ -34,7 +35,7 @@ renderOption icon text msg =
         [ H.div
             [ Attr.class "flex gap-5 items-center"
             ]
-            [ H.span [] [ Page.renderIcon { icon = icon, size = 24 } ]
+            [ H.span [] [ Page.renderIcon { icon = icon, size = 16 } ]
             , H.span [] [ H.text text ]
             ]
         , H.span [] [ Page.renderIcon { icon = FeatherIcons.chevronRight, size = 24 } ]
@@ -56,6 +57,7 @@ view =
                 [ renderOption FeatherIcons.arrowUpCircle "Expense" GoToExpensePage
                 , renderOption FeatherIcons.dollarSign "Income" GoToIncomePage
                 , renderOption FeatherIcons.refreshCw "Transfer" GoToTransferPage
+                , renderOption FeatherIcons.activity "Recent" GoToRecentsPage
                 , renderOption FeatherIcons.logOut "Logout" Logout
                 ]
         ]

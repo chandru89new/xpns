@@ -34,6 +34,7 @@ renderIcon : { icon : FeatherIcons.Icon, size : Int } -> Html msg
 renderIcon { icon, size } =
     icon
         |> FeatherIcons.withSize (toFloat size)
+        |> FeatherIcons.withStrokeWidth 2
         |> FeatherIcons.toHtml []
 
 
