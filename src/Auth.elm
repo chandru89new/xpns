@@ -4,6 +4,7 @@ import Capacitor
 import Http
 import Json.Decode as JsonD
 import Json.Encode as JsonE
+import Page
 
 
 type Msg
@@ -67,7 +68,7 @@ update msg model =
                     )
 
                 Err e ->
-                    ( { model | authState = AuthError (Debug.toString e) }, Capacitor.showAlert { title = "Error", message = "Something went wrong when trying to authorize: " ++ Debug.toString e } )
+                    ( { model | authState = AuthError (Page.errToString e) }, Capacitor.showAlert { title = "Error", message = "Something went wrong when trying to authorize: " ++ Page.errToString e } )
 
 
 authUrl =

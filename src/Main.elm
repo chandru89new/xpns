@@ -511,14 +511,6 @@ viewLoginPage =
         ]
 
 
-renderDebug : Model -> Html Msg
-renderDebug model =
-    H.div
-        [ Attr.class "p-3 text-xs overflow-hidden text-clip bg-black text-white"
-        ]
-        [ H.text <| Debug.toString model ]
-
-
 getAccounts : { token : String, sheetId : String, accountSheet : String } -> Cmd Msg
 getAccounts { token, sheetId, accountSheet } =
     let

@@ -2,6 +2,7 @@ module TransferPage exposing (..)
 
 import API
 import Capacitor
+import Dict
 import ExpenseTracker exposing (showError)
 import FeatherIcons
 import Html as H exposing (Html)
@@ -21,11 +22,17 @@ type alias Model =
     , info : String
     , notes : String
     , pageState : PageState
+    , transferType : TransferType
     }
 
 
+type TransferType
+    = Transfer
+    | Investment
+
+
 init =
-    Model "" "" "" "" "" "" Loading
+    Model "" "" "" "" "" "" Loading Transfer
 
 
 type PageState
@@ -42,6 +49,7 @@ type Msg
     | UpdateNotes String
     | UpdateInfo String
     | UpdateDate String
+    | ToggleTransferType Bool
     | SaveTransfer
     | SaveTransferDone (Result Http.Error ())
 
@@ -82,9 +90,21 @@ update msg model globals =
                     ( model
                     , Capacitor.showAlert
                         { title = " Error "
-                        , message = Debug.toString e
+                        , message = Page.errToString e
                         }
                     )
+
+        ToggleTransferType _ ->
+            let
+                toggle ttype =
+                    case ttype of
+                        Transfer ->
+                            Investment
+
+                        Investment ->
+                            Transfer
+            in
+            ( { model | transferType = toggle model.transferType }, Cmd.none )
 
 
 pageHeader =
@@ -163,6 +183,22 @@ view globals model =
                     , Attr.type_ "number"
                     ]
                     []
+            , Page.formElement "Investment?" <|
+                H.div
+                    [ Attr.class "flex items-center gap-2"
+                    ]
+                    [ H.input
+                        [ Ev.onCheck ToggleTransferType
+                        , Attr.checked (model.transferType == Investment)
+                        , Attr.type_ "checkbox"
+                        , Attr.id "transfer-type"
+                        ]
+                        []
+                    , H.label
+                        [ Attr.for "transfer-type"
+                        ]
+                        [ H.text "Yes, it's an investment" ]
+                    ]
             , Page.formElement "When?" <|
                 H.input
                     [ Attr.value model.date
@@ -231,14 +267,14 @@ saveTransfer model { token, expenseSheet, sheetId } =
                       , JsonE.list (JsonE.list JsonE.string)
                             [ [ model.date
                               , model.info
-                              , "transfer"
+                              , transferTypeToString model.transferType
                               , model.amount
                               , model.fromAccount
                               , model.notes
                               ]
                             , [ model.date
                               , model.info
-                              , "transfer"
+                              , transferTypeToString model.transferType
                               , "-" ++ model.amount
                               , model.toAccount
                               , model.notes
@@ -269,4 +305,15 @@ clearForm _ =
     , info = ""
     , notes = ""
     , pageState = Loaded
+    , transferType = Transfer
     }
+
+
+transferTypeToString : TransferType -> String
+transferTypeToString ttype =
+    case ttype of
+        Transfer ->
+            "transfer"
+
+        Investment ->
+            "investment"

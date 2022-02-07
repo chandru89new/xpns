@@ -100,7 +100,7 @@ update msg model { token, sheetId, expenseSheet } =
                     ( model
                     , Capacitor.showAlert
                         { title = " Error "
-                        , message = Debug.toString e
+                        , message = Page.errToString e
                         }
                     )
 

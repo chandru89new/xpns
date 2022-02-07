@@ -89,7 +89,7 @@ update globals msg model =
                     ( model
                     , Capacitor.showAlert
                         { title = " Error "
-                        , message = Debug.toString e
+                        , message = Page.errToString e
                         }
                     )
 

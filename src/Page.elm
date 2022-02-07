@@ -119,10 +119,10 @@ errToString e =
             s
 
         Http.BadStatus int ->
-            "Server responded with a bad status code: " ++ String.fromInt int
+            "Server responded with a bad status code: " ++ String.fromInt int ++ ". Try quitting the app completely and re-opening it."
 
         Http.BadBody s ->
             s
 
         _ ->
-            "Weird. Inexplicable error occured!"
+            "Weird. Inexplicable error occured! Try restarting the app."
