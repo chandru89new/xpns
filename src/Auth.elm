@@ -68,7 +68,7 @@ update msg model =
                     )
 
                 Err e ->
-                    ( { model | authState = AuthError (Page.errToString e) }, Capacitor.showAlert { title = "Error", message = "Something went wrong when trying to authorize: " ++ Page.errToString e } )
+                    ( { model | authState = AuthError (Page.errToString e) }, Capacitor.showAlert { title = "Authorization error", message = Page.errToString e } )
 
 
 authUrl =
@@ -76,7 +76,7 @@ authUrl =
 
 
 clientId =
-    "34596233405-fmkeqrgsajsuhd39bruih2jsh7ahoq8j.apps.googleusercontent.com"
+    "34596233405-fgqv4u6utob1c9hkf596g42r6dhdr20d.apps.googleusercontent.com"
 
 
 redirectURI =

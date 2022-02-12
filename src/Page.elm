@@ -125,4 +125,4 @@ errToString e =
             s
 
         _ ->
-            Debug.toString e
+            "Weird! Something went wrong and I'm unable to process further. Try restarting the app!"
