@@ -124,5 +124,8 @@ errToString e =
         Http.BadBody s ->
             s
 
-        _ ->
-            "Weird! Something went wrong and I'm unable to process further. Try restarting the app!"
+        Http.NetworkError ->
+            "Network error! Unable to make a request."
+
+        Http.Timeout ->
+            "Network timeout! Took too long and there is no response yet."

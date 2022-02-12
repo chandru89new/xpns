@@ -72,7 +72,7 @@ update msg model =
 
 
 authUrl =
-    "https://oauth2.googleapis.com/token"
+    "https://accounts.google.com/o/oauth2/token"
 
 
 clientId =
