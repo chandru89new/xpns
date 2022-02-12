@@ -87,7 +87,7 @@ loadTransactions { token, sheetId, expenseSheet } =
             JsonD.field "values" (JsonD.list (JsonD.list JsonD.string))
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ expenseSheet ++ "!A2:Z"
+            "https://sheets.googleapis.com/v4/spreadsheets/" ++ (sheetId |> Maybe.withDefault "") ++ "/values/" ++ expenseSheet ++ "!A2:Z"
 
         expect =
             Http.expectJson
@@ -97,7 +97,12 @@ loadTransactions { token, sheetId, expenseSheet } =
         queryParams =
             []
     in
-    API.get token baseURL queryParams expect
+    case sheetId of
+        Nothing ->
+            Page.msgToCmd <| TransactionsLoaded (Result.Err <| Http.BadUrl "No sheet ID set")
+
+        _ ->
+            API.get token baseURL queryParams expect
 
 
 txnCard : List String -> Html msg

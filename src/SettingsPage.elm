@@ -20,21 +20,26 @@ type Msg
 
 
 type alias Model =
-    { sheetId : String
+    { sheetId : Maybe String
     , accountSheet : String
     , expenseSheet : String
     }
 
 
 init =
-    Model "" "" ""
+    Model (Just "") "" ""
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UpdateSheetId id ->
-            ( { model | sheetId = id }, Cmd.none )
+            case String.trim id of
+                "" ->
+                    ( { model | sheetId = Nothing }, Cmd.none )
+
+                str ->
+                    ( { model | sheetId = Just str }, Cmd.none )
 
         UpdateAccountSheetName name ->
             ( { model | accountSheet = name }, Cmd.none )
@@ -76,7 +81,7 @@ view { sheetId, accountSheet, expenseSheet } =
             ]
             [ Page.formElement "Sheet ID:" <|
                 H.input
-                    [ Attr.value sheetId
+                    [ Attr.value (sheetId |> Maybe.withDefault "")
                     , Ev.onInput UpdateSheetId
                     ]
                     []
@@ -109,7 +114,7 @@ view { sheetId, accountSheet, expenseSheet } =
 saveSheetSettings : Model -> Cmd Msg
 saveSheetSettings model =
     Cmd.batch
-        [ Capacitor.saveToStorage ( "sheetId", JsonE.string model.sheetId )
+        [ Capacitor.saveToStorage ( "sheetId", JsonE.string (model.sheetId |> Maybe.withDefault "") )
         , Capacitor.saveToStorage ( "accountSheet", JsonE.string model.accountSheet )
         , Capacitor.saveToStorage ( "expenseSheet", JsonE.string model.expenseSheet )
         ]

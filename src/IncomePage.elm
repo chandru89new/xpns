@@ -10,6 +10,7 @@ import Html.Events as Ev
 import Http
 import Json.Encode as JsonE
 import Page
+import Result
 import Task
 
 
@@ -103,7 +104,7 @@ view globals model =
             [ if globals.sheetError /= "" then
                 ExpenseTracker.showError globals.sheetError
 
-              else if globals.sheetId == "" then
+              else if globals.sheetId == Nothing then
                 ExpenseTracker.showError "No sheet ID."
 
               else
@@ -228,6 +229,14 @@ saveIncome { token, sheetId, expenseSheet } model =
             Http.expectWhatever SaveTransferDone
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append"
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append") sheetId
     in
-    API.post token baseURL queryParams body expect
+    case baseURL of
+        Nothing ->
+            Result.Err
+                (Http.BadUrl "No sheet ID set")
+                |> SaveTransferDone
+                |> Page.msgToCmd
+
+        Just url ->
+            API.post token url queryParams body expect

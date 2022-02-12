@@ -380,13 +380,23 @@ update msg model =
 
         ReceiveSheetSettingsFromStorage ( sheetId, accountSheet, expenseSheet ) ->
             let
+                sheetId_ =
+                    if String.trim sheetId == "" then
+                        Nothing
+
+                    else
+                        Just sheetId
+
                 sheetSettings =
-                    SettingsPage.Model sheetId accountSheet expenseSheet
+                    SettingsPage.Model
+                        sheetId_
+                        accountSheet
+                        expenseSheet
             in
             ( { model | sheetSettings = sheetSettings }
             , getAccounts
                 { token = model.auth.token
-                , sheetId = sheetId
+                , sheetId = sheetId_
                 , accountSheet = accountSheet
                 }
             )
@@ -511,7 +521,7 @@ viewLoginPage =
         ]
 
 
-getAccounts : { token : String, sheetId : String, accountSheet : String } -> Cmd Msg
+getAccounts : { token : String, sheetId : Maybe String, accountSheet : String } -> Cmd Msg
 getAccounts { token, sheetId, accountSheet } =
     let
         decoder =
@@ -520,7 +530,7 @@ getAccounts { token, sheetId, accountSheet } =
                 |> JsonD.map (List.drop 1)
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ accountSheet ++ "!A:A"
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ accountSheet ++ "!A:A") sheetId
 
         expect =
             Http.expectJson GotAccounts decoder
@@ -528,7 +538,12 @@ getAccounts { token, sheetId, accountSheet } =
         queryParams =
             [ ( "majorDimension", "COLUMNS" ) ]
     in
-    API.get token baseURL queryParams expect
+    case baseURL of
+        Just url ->
+            API.get token url queryParams expect
+
+        Nothing ->
+            Page.msgToCmd <| GotAccounts <| Result.Err <| Http.BadUrl "No sheet ID"
 
 
 getGlobals : Model -> Page.Global

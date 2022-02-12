@@ -95,7 +95,7 @@ type alias Error =
 
 type alias Global =
     { token : String
-    , sheetId : String
+    , sheetId : Maybe String
     , accounts : List String
     , sheetError : Error
     , accountSheet : String
@@ -104,7 +104,7 @@ type alias Global =
 
 
 initGlobal =
-    Global "" "" [] ""
+    Global "" Nothing [] ""
 
 
 msgToCmd : msg -> Cmd msg

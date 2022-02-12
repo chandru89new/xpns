@@ -58,7 +58,7 @@ type Msg
 type alias Global a =
     { a
         | token : String
-        , sheetId : String
+        , sheetId : Maybe String
         , expenseSheet : String
     }
 
@@ -85,7 +85,7 @@ update msg model { token, sheetId, expenseSheet } =
             ( { model | notes = n }, Cmd.none )
 
         SaveExpense ->
-            if sheetId == "" then
+            if sheetId == Nothing then
                 ( model, Cmd.none )
 
             else
@@ -287,9 +287,14 @@ saveExpense model { sheetId, token, expenseSheet } =
             Http.expectWhatever SaveExpenseResponded
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append"
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append") sheetId
     in
-    API.post token baseURL queryParams body expect
+    case baseURL of
+        Just url ->
+            API.post token url queryParams body expect
+
+        Nothing ->
+            Page.msgToCmd <| SaveExpenseResponded <| Result.Err <| Http.BadUrl "No sheet ID set."
 
 
 clearExpenseTrackerData : Model -> Model

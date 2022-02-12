@@ -5357,7 +5357,11 @@ var $author$project$SettingsPage$Model = F3(
 	function (sheetId, accountSheet, expenseSheet) {
 		return {accountSheet: accountSheet, expenseSheet: expenseSheet, sheetId: sheetId};
 	});
-var $author$project$SettingsPage$init = A3($author$project$SettingsPage$Model, '', '', '');
+var $author$project$SettingsPage$init = A3(
+	$author$project$SettingsPage$Model,
+	$elm$core$Maybe$Just(''),
+	'',
+	'');
 var $author$project$TransferPage$Loading = {$: 'Loading'};
 var $author$project$TransferPage$Model = F8(
 	function (amount, fromAccount, toAccount, date, info, notes, pageState, transferType) {
@@ -5613,6 +5617,9 @@ var $elm$core$Set$insert = F2(
 	});
 var $elm$core$Set$fromList = function (list) {
 	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
+};
+var $elm$http$Http$BadUrl = function (a) {
+	return {$: 'BadUrl', a: a};
 };
 var $author$project$Main$GotAccounts = function (a) {
 	return {$: 'GotAccounts', a: a};
@@ -6100,9 +6107,6 @@ var $elm$http$Http$BadBody = function (a) {
 var $elm$http$Http$BadStatus = function (a) {
 	return {$: 'BadStatus', a: a};
 };
-var $elm$http$Http$BadUrl = function (a) {
-	return {$: 'BadUrl', a: a};
-};
 var $elm$http$Http$NetworkError = {$: 'NetworkError'};
 var $elm$http$Http$Timeout = {$: 'Timeout'};
 var $elm$http$Http$resolve = F2(
@@ -6377,6 +6381,24 @@ var $elm$core$List$head = function (list) {
 	}
 };
 var $elm$json$Json$Decode$list = _Json_decodeList;
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Page$msgToCmd = function (msg) {
+	return A2(
+		$elm$core$Task$perform,
+		function (_v0) {
+			return msg;
+		},
+		$elm$core$Task$succeed(1));
+};
 var $elm$core$Maybe$withDefault = F2(
 	function (_default, maybe) {
 		if (maybe.$ === 'Just') {
@@ -6409,8 +6431,21 @@ var $author$project$Main$getAccounts = function (_v0) {
 				$elm$json$Json$Decode$list(
 					$elm$json$Json$Decode$list($elm$json$Json$Decode$string)))));
 	var expect = A2($elm$http$Http$expectJson, $author$project$Main$GotAccounts, decoder);
-	var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (accountSheet + '!A:A')));
-	return A4($author$project$API$get, token, baseURL, queryParams, expect);
+	var baseURL = A2(
+		$elm$core$Maybe$map,
+		function (id) {
+			return 'https://sheets.googleapis.com/v4/spreadsheets/' + (id + ('/values/' + (accountSheet + '!A:A')));
+		},
+		sheetId);
+	if (baseURL.$ === 'Just') {
+		var url = baseURL.a;
+		return A4($author$project$API$get, token, url, queryParams, expect);
+	} else {
+		return $author$project$Page$msgToCmd(
+			$author$project$Main$GotAccounts(
+				$elm$core$Result$Err(
+					$elm$http$Http$BadUrl('No sheet ID'))));
+	}
 };
 var $author$project$Main$getGlobals = function (model) {
 	return {accountSheet: model.sheetSettings.accountSheet, accounts: model.accounts, expenseSheet: model.sheetSettings.expenseSheet, sheetError: model.sheetError, sheetId: model.sheetSettings.sheetId, token: model.auth.token};
@@ -6442,15 +6477,8 @@ var $author$project$Main$logOut = _Platform_outgoingPort(
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
-var $author$project$Page$msgToCmd = function (msg) {
-	return A2(
-		$elm$core$Task$perform,
-		function (_v0) {
-			return msg;
-		},
-		$elm$core$Task$succeed(1));
-};
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$core$String$trim = _String_trim;
 var $author$project$AccountsPage$Accounts = function (a) {
 	return {$: 'Accounts', a: a};
 };
@@ -6500,8 +6528,21 @@ var $author$project$AccountsPage$loadAccounts = function (_v0) {
 		$elm$json$Json$Decode$list(
 			$elm$json$Json$Decode$list($elm$json$Json$Decode$string)));
 	var expect = A2($elm$http$Http$expectJson, $author$project$AccountsPage$AccountsLoaded, decoder);
-	var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (accountSheet + '!A2:Z')));
-	return A4($author$project$API$get, token, baseURL, queryParams, expect);
+	var baseURL = A2(
+		$elm$core$Maybe$map,
+		function (id) {
+			return 'https://sheets.googleapis.com/v4/spreadsheets/' + (id + ('/values/' + (accountSheet + '!A2:Z')));
+		},
+		sheetId);
+	if (baseURL.$ === 'Just') {
+		var url = baseURL.a;
+		return A4($author$project$API$get, token, url, queryParams, expect);
+	} else {
+		return $author$project$Page$msgToCmd(
+			$author$project$AccountsPage$AccountsLoaded(
+				$elm$core$Result$Err(
+					$elm$http$Http$BadUrl('No sheet ID set.'))));
+	}
 };
 var $author$project$AccountsPage$update = F3(
 	function (globals, msg, model) {
@@ -6821,8 +6862,21 @@ var $author$project$ExpenseTracker$saveExpense = F2(
 									[model.date, model.info, model.category, model.amount, model.account, model.notes])
 								])))
 					])));
-		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
-		return A5($author$project$API$post, token, baseURL, queryParams, body, expect);
+		var baseURL = A2(
+			$elm$core$Maybe$map,
+			function (id) {
+				return 'https://sheets.googleapis.com/v4/spreadsheets/' + (id + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
+			},
+			sheetId);
+		if (baseURL.$ === 'Just') {
+			var url = baseURL.a;
+			return A5($author$project$API$post, token, url, queryParams, body, expect);
+		} else {
+			return $author$project$Page$msgToCmd(
+				$author$project$ExpenseTracker$SaveExpenseResponded(
+					$elm$core$Result$Err(
+						$elm$http$Http$BadUrl('No sheet ID set.'))));
+		}
 	});
 var $author$project$ExpenseTracker$update = F3(
 	function (msg, model, _v0) {
@@ -6873,7 +6927,7 @@ var $author$project$ExpenseTracker$update = F3(
 						{notes: n}),
 					$elm$core$Platform$Cmd$none);
 			case 'SaveExpense':
-				return (sheetId === '') ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+				return _Utils_eq(sheetId, $elm$core$Maybe$Nothing) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{pageState: $author$project$ExpenseTracker$Saving}),
@@ -6935,8 +6989,21 @@ var $author$project$IncomePage$saveIncome = F2(
 									[model.date, model.info, 'income', '-' + model.amount, model.intoAccount, model.notes])
 								])))
 					])));
-		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
-		return A5($author$project$API$post, token, baseURL, queryParams, body, expect);
+		var baseURL = A2(
+			$elm$core$Maybe$map,
+			function (id) {
+				return 'https://sheets.googleapis.com/v4/spreadsheets/' + (id + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
+			},
+			sheetId);
+		if (baseURL.$ === 'Nothing') {
+			return $author$project$Page$msgToCmd(
+				$author$project$IncomePage$SaveTransferDone(
+					$elm$core$Result$Err(
+						$elm$http$Http$BadUrl('No sheet ID set'))));
+		} else {
+			var url = baseURL.a;
+			return A5($author$project$API$post, token, url, queryParams, body, expect);
+		}
 	});
 var $author$project$IncomePage$update = F3(
 	function (globals, msg, model) {
@@ -7027,8 +7094,15 @@ var $author$project$RecentsPage$loadTransactions = function (_v0) {
 		$elm$json$Json$Decode$list(
 			$elm$json$Json$Decode$list($elm$json$Json$Decode$string)));
 	var expect = A2($elm$http$Http$expectJson, $author$project$RecentsPage$TransactionsLoaded, decoder);
-	var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + '!A2:Z')));
-	return A4($author$project$API$get, token, baseURL, queryParams, expect);
+	var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (A2($elm$core$Maybe$withDefault, '', sheetId) + ('/values/' + (expenseSheet + '!A2:Z')));
+	if (sheetId.$ === 'Nothing') {
+		return $author$project$Page$msgToCmd(
+			$author$project$RecentsPage$TransactionsLoaded(
+				$elm$core$Result$Err(
+					$elm$http$Http$BadUrl('No sheet ID set'))));
+	} else {
+		return A4($author$project$API$get, token, baseURL, queryParams, expect);
+	}
 };
 var $elm$core$List$takeReverse = F3(
 	function (n, list, kept) {
@@ -7202,7 +7276,8 @@ var $author$project$SettingsPage$saveSheetSettings = function (model) {
 				$author$project$Capacitor$saveToStorage(
 				_Utils_Tuple2(
 					'sheetId',
-					$elm$json$Json$Encode$string(model.sheetId))),
+					$elm$json$Json$Encode$string(
+						A2($elm$core$Maybe$withDefault, '', model.sheetId)))),
 				$author$project$Capacitor$saveToStorage(
 				_Utils_Tuple2(
 					'accountSheet',
@@ -7218,11 +7293,23 @@ var $author$project$SettingsPage$update = F2(
 		switch (msg.$) {
 			case 'UpdateSheetId':
 				var id = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{sheetId: id}),
-					$elm$core$Platform$Cmd$none);
+				var _v1 = $elm$core$String$trim(id);
+				if (_v1 === '') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{sheetId: $elm$core$Maybe$Nothing}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var str = _v1;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								sheetId: $elm$core$Maybe$Just(str)
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 			case 'UpdateAccountSheetName':
 				var name = msg.a;
 				return _Utils_Tuple2(
@@ -7303,8 +7390,21 @@ var $author$project$TransferPage$saveTransfer = F2(
 									])
 								])))
 					])));
-		var baseURL = 'https://sheets.googleapis.com/v4/spreadsheets/' + (sheetId + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
-		return A5($author$project$API$post, token, baseURL, queryParams, body, expect);
+		var baseURL = A2(
+			$elm$core$Maybe$map,
+			function (id) {
+				return 'https://sheets.googleapis.com/v4/spreadsheets/' + (id + ('/values/' + (expenseSheet + ('!A:Z' + ':append'))));
+			},
+			sheetId);
+		if (baseURL.$ === 'Nothing') {
+			return $author$project$Page$msgToCmd(
+				$author$project$TransferPage$SaveTransferDone(
+					$elm$core$Result$Err(
+						$elm$http$Http$BadUrl('No sheet ID set'))));
+		} else {
+			var url = baseURL.a;
+			return A5($author$project$API$post, token, url, queryParams, body, expect);
+		}
 	});
 var $author$project$TransferPage$update = F3(
 	function (msg, model, globals) {
@@ -7810,13 +7910,14 @@ var $author$project$Main$update = F2(
 					var sheetId = _v18.a;
 					var accountSheet = _v18.b;
 					var expenseSheet = _v18.c;
-					var sheetSettings = A3($author$project$SettingsPage$Model, sheetId, accountSheet, expenseSheet);
+					var sheetId_ = ($elm$core$String$trim(sheetId) === '') ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(sheetId);
+					var sheetSettings = A3($author$project$SettingsPage$Model, sheetId_, accountSheet, expenseSheet);
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{sheetSettings: sheetSettings}),
 						$author$project$Main$getAccounts(
-							{accountSheet: accountSheet, sheetId: sheetId, token: model.auth.token}));
+							{accountSheet: accountSheet, sheetId: sheetId_, token: model.auth.token}));
 				case 'RecentsPageMsg':
 					var recentsPageMsg = msg.a;
 					var _v19 = A3(
@@ -8869,7 +8970,6 @@ var $author$project$IncomePage$UpdateIntoAccount = function (a) {
 var $author$project$IncomePage$UpdateNotes = function (a) {
 	return {$: 'UpdateNotes', a: a};
 };
-var $elm$core$String$trim = _String_trim;
 var $author$project$IncomePage$isFormValid = function (model) {
 	var notEmpty = !A2(
 		$elm$core$List$any,
@@ -8910,7 +9010,7 @@ var $author$project$IncomePage$view = F2(
 					]),
 				_List_fromArray(
 					[
-						(globals.sheetError !== '') ? $author$project$ExpenseTracker$showError(globals.sheetError) : ((globals.sheetId === '') ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
+						(globals.sheetError !== '') ? $author$project$ExpenseTracker$showError(globals.sheetError) : (_Utils_eq(globals.sheetId, $elm$core$Maybe$Nothing) ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
 						A2(
 						$author$project$Page$formElement,
 						'How much?',
@@ -9166,7 +9266,8 @@ var $author$project$SettingsPage$view = function (_v0) {
 						$elm$html$Html$input,
 						_List_fromArray(
 							[
-								$elm$html$Html$Attributes$value(sheetId),
+								$elm$html$Html$Attributes$value(
+								A2($elm$core$Maybe$withDefault, '', sheetId)),
 								$elm$html$Html$Events$onInput($author$project$SettingsPage$UpdateSheetId)
 							]),
 						_List_Nil)),
@@ -9298,7 +9399,7 @@ var $author$project$TransferPage$view = F2(
 					]),
 				_List_fromArray(
 					[
-						(globals.sheetError !== '') ? $author$project$ExpenseTracker$showError(globals.sheetError) : ((globals.sheetId === '') ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
+						(globals.sheetError !== '') ? $author$project$ExpenseTracker$showError(globals.sheetError) : (_Utils_eq(globals.sheetId, $elm$core$Maybe$Nothing) ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
 						A2(
 						$author$project$Page$formElement,
 						'From which account?',

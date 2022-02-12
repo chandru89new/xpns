@@ -110,7 +110,7 @@ loadAccounts { token, sheetId, accountSheet } =
             JsonD.field "values" (JsonD.list (JsonD.list JsonD.string))
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ accountSheet ++ "!A2:Z"
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ accountSheet ++ "!A2:Z") sheetId
 
         expect =
             Http.expectJson
@@ -120,7 +120,12 @@ loadAccounts { token, sheetId, accountSheet } =
         queryParams =
             []
     in
-    API.get token baseURL queryParams expect
+    case baseURL of
+        Just url ->
+            API.get token url queryParams expect
+
+        Nothing ->
+            AccountsLoaded (Result.Err <| Http.BadUrl "No sheet ID set.") |> Page.msgToCmd
 
 
 accountCard : Account -> Html msg

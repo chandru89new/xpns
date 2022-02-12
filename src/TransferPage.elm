@@ -130,7 +130,7 @@ view globals model =
             [ if globals.sheetError /= "" then
                 showError globals.sheetError
 
-              else if globals.sheetId == "" then
+              else if globals.sheetId == Nothing then
                 showError "No sheet ID."
 
               else
@@ -290,9 +290,17 @@ saveTransfer model { token, expenseSheet, sheetId } =
             Http.expectWhatever SaveTransferDone
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ sheetId ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append"
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append") sheetId
     in
-    API.post token baseURL queryParams body expect
+    case baseURL of
+        Nothing ->
+            Http.BadUrl "No sheet ID set"
+                |> Result.Err
+                |> SaveTransferDone
+                |> Page.msgToCmd
+
+        Just url ->
+            API.post token url queryParams body expect
 
 
 clearForm : Model -> Model
