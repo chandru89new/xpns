@@ -2,7 +2,6 @@ module TransferPage exposing (..)
 
 import API
 import Capacitor
-import Dict
 import ExpenseTracker exposing (showError)
 import FeatherIcons
 import Html as H exposing (Html)

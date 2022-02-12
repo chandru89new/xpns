@@ -47,7 +47,7 @@ update globals msg model =
                     ( { model | transactions = ErrorMsg <| Page.errToString e }, Cmd.none )
 
                 Ok list ->
-                    ( { model | transactions = Transactions (list |> List.reverse |> List.take 10) }, Cmd.none )
+                    ( { model | transactions = Transactions (list |> List.reverse |> List.take 50) }, Cmd.none )
 
 
 view : Model -> Html Msg

@@ -125,4 +125,4 @@ errToString e =
             s
 
         _ ->
-            "Weird. Inexplicable error occured! Try restarting the app."
+            Debug.toString e
