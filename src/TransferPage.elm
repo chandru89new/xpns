@@ -271,6 +271,7 @@ saveTransfer model { token, expenseSheet, sheetId } =
                               , model.fromAccount
                               , model.notes
                               ]
+                                |> List.map String.trim
                             , [ model.date
                               , model.info
                               , transferTypeToString model.transferType
@@ -278,6 +279,7 @@ saveTransfer model { token, expenseSheet, sheetId } =
                               , model.toAccount
                               , model.notes
                               ]
+                                |> List.map String.trim
                             ]
                       )
                     ]

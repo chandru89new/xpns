@@ -6858,8 +6858,11 @@ var $author$project$ExpenseTracker$saveExpense = F2(
 							$elm$json$Json$Encode$list($elm$json$Json$Encode$string),
 							_List_fromArray(
 								[
+									A2(
+									$elm$core$List$map,
+									$elm$core$String$trim,
 									_List_fromArray(
-									[model.date, model.info, model.category, model.amount, model.account, model.notes])
+										[model.date, model.info, model.category, model.amount, model.account, model.notes]))
 								])))
 					])));
 		var baseURL = A2(
@@ -6985,8 +6988,11 @@ var $author$project$IncomePage$saveIncome = F2(
 							$elm$json$Json$Encode$list($elm$json$Json$Encode$string),
 							_List_fromArray(
 								[
+									A2(
+									$elm$core$List$map,
+									$elm$core$String$trim,
 									_List_fromArray(
-									[model.date, model.info, 'income', '-' + model.amount, model.intoAccount, model.notes])
+										[model.date, model.info, 'income', '-' + model.amount, model.intoAccount, model.notes]))
 								])))
 					])));
 		var baseURL = A2(
@@ -7370,24 +7376,30 @@ var $author$project$TransferPage$saveTransfer = F2(
 							$elm$json$Json$Encode$list($elm$json$Json$Encode$string),
 							_List_fromArray(
 								[
+									A2(
+									$elm$core$List$map,
+									$elm$core$String$trim,
 									_List_fromArray(
-									[
-										model.date,
-										model.info,
-										$author$project$TransferPage$transferTypeToString(model.transferType),
-										model.amount,
-										model.fromAccount,
-										model.notes
-									]),
+										[
+											model.date,
+											model.info,
+											$author$project$TransferPage$transferTypeToString(model.transferType),
+											model.amount,
+											model.fromAccount,
+											model.notes
+										])),
+									A2(
+									$elm$core$List$map,
+									$elm$core$String$trim,
 									_List_fromArray(
-									[
-										model.date,
-										model.info,
-										$author$project$TransferPage$transferTypeToString(model.transferType),
-										'-' + model.amount,
-										model.toAccount,
-										model.notes
-									])
+										[
+											model.date,
+											model.info,
+											$author$project$TransferPage$transferTypeToString(model.transferType),
+											'-' + model.amount,
+											model.toAccount,
+											model.notes
+										]))
 								])))
 					])));
 		var baseURL = A2(

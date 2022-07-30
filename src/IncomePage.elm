@@ -217,6 +217,7 @@ saveIncome { token, sheetId, expenseSheet } model =
                               , model.intoAccount
                               , model.notes
                               ]
+                                |> List.map String.trim
                             ]
                       )
                     ]

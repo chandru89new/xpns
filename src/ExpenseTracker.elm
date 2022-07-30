@@ -276,7 +276,7 @@ saveExpense model { sheetId, token, expenseSheet } =
         body =
             Http.jsonBody <|
                 JsonE.object
-                    [ ( "values", JsonE.list (JsonE.list JsonE.string) [ [ model.date, model.info, model.category, model.amount, model.account, model.notes ] ] )
+                    [ ( "values", JsonE.list (JsonE.list JsonE.string) [ [ model.date, model.info, model.category, model.amount, model.account, model.notes ] |> List.map String.trim ] )
                     ]
 
         queryParams =
