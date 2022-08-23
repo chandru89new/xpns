@@ -121,14 +121,14 @@ pageWrapper body =
 
 
 view : Page.Global -> Model -> Html Msg
-view { sheetError, accounts } model =
+view { sheetError, accounts, accountsLoading } model =
     case model.pageState of
         Loading ->
             Page.pageLoaderDiv
 
         Loaded ->
             pageWrapper <|
-                if sheetError /= "" then
+                if not accountsLoading && String.trim sheetError /= "" then
                     H.div [] [ showError sheetError, viewForm accounts model ]
 
                 else

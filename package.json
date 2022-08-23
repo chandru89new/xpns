@@ -25,8 +25,10 @@
     "build-elm": "elm make src/Main.elm --optimize --output ./main.js && uglifyjs ./main.js --compress 'pure_funcs=[F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9],pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output ./main.js",
     "dev": "nodemon --exec \"yarn build-css && yarn dev-build-elm && parcel index.html\"",
     "build": "yarn build-css && yarn build-elm && parcel build index.html",
-    "cap": "yarn capacitor run",
-    "dev-mobile": "yarn build-css && yarn dev-build-elm && parcel build index.html && yarn cap android"
+    "cap": "yarn capacitor",
+    "dev-mobile": "yarn build-css && yarn dev-build-elm && parcel build index.html && yarn capacitor copy android && yarn capacitor open android",
+    "build-android": "yarn build && yarn capacitor copy android && yarn capacitor open android",
+    "custom": "yarn dev-build-elm && parcel build index.html && yarn cap copy android && yarn cap open android"
   },
   "license": "0BSD"
 }

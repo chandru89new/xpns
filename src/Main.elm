@@ -4,6 +4,7 @@ import API
 import AccountsPage
 import Auth
 import Browser
+import Capacitor
 import ExpenseTracker exposing (clearExpenseTrackerData)
 import FeatherIcons as Icons
 import HomePage
@@ -42,6 +43,7 @@ type alias Model =
     , auth : Auth.Model
     , sheetSettings : SettingsPage.Model
     , sheetError : String
+    , accountsLoading : Bool
     , toastMsg : Maybe String
     , recentsPage : RecentsPage.Model
     , accountsPage : AccountsPage.Model
@@ -95,6 +97,7 @@ init _ =
         , incomePage = IncomePage.init
         , recentsPage = RecentsPage.init
         , accountsPage = AccountsPage.init
+        , accountsLoading = False
 
         --sheetId = "1E-XVfWRerpSjdtey0U4NdVL2A00NBacLvmGgHTX6VeU"
         }
@@ -183,11 +186,12 @@ update msg model =
 
                 Auth.LoggedIn ->
                     Tuple.pair
-                        { model | auth = m, currentPage = HomePage }
+                        { model | auth = m, currentPage = HomePage, accountsLoading = True }
                         (Cmd.batch
                             [ cmd_
                             , getAccounts
-                                { token = m.token
+                                { token =
+                                    emptyStringToMaybe m.token
                                 , sheetId = model.sheetSettings.sheetId
                                 , accountSheet = model.sheetSettings.accountSheet
                                 }
@@ -265,11 +269,11 @@ update msg model =
                     update (GoTo HomePage) newModel
 
                 SettingsPage.SaveSheetSettings ->
-                    ( { newModel | toastMsg = Just "Saved!" }
+                    ( { newModel | toastMsg = Just "Saved!", accountsLoading = True }
                     , Cmd.batch
                         [ newCmd
                         , getAccounts
-                            { token = model.auth.token
+                            { token = emptyStringToMaybe model.auth.token
                             , sheetId = m.sheetId
                             , accountSheet = m.accountSheet
                             }
@@ -283,10 +287,10 @@ update msg model =
         GotAccounts res ->
             case res of
                 Ok accs ->
-                    ( { model | accounts = accs |> Set.fromList |> Set.toList, sheetError = "" }, Cmd.none )
+                    ( { model | accountsLoading = False, accounts = accs |> Set.fromList |> Set.toList, sheetError = "" }, Cmd.none )
 
-                Err _ ->
-                    ( { model | accounts = [], sheetError = "Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct." }
+                Err e ->
+                    ( { model | accountsLoading = False, accounts = [], sheetError = "Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct." }
                     , Cmd.batch
                         []
                     )
@@ -393,9 +397,9 @@ update msg model =
                         accountSheet
                         expenseSheet
             in
-            ( { model | sheetSettings = sheetSettings }
+            ( { model | sheetSettings = sheetSettings, accountsLoading = True }
             , getAccounts
-                { token = model.auth.token
+                { token = emptyStringToMaybe model.auth.token
                 , sheetId = sheetId_
                 , accountSheet = accountSheet
                 }
@@ -462,7 +466,7 @@ view model =
                     HomePage.view |> H.map HomePageMsg
 
                 ExpenseTrackerPage ->
-                    ExpenseTracker.view (Page.Global model.auth.token model.sheetSettings.sheetId model.accounts model.sheetError model.sheetSettings.accountSheet model.sheetSettings.expenseSheet) model.expenseTracker
+                    ExpenseTracker.view (getGlobals model) model.expenseTracker
                         |> H.map ExpenseTrackerPageMsg
 
                 SettingsPage ->
@@ -521,7 +525,7 @@ viewLoginPage =
         ]
 
 
-getAccounts : { token : String, sheetId : Maybe String, accountSheet : String } -> Cmd Msg
+getAccounts : { token : Maybe String, sheetId : Maybe String, accountSheet : String } -> Cmd Msg
 getAccounts { token, sheetId, accountSheet } =
     let
         decoder =
@@ -538,12 +542,17 @@ getAccounts { token, sheetId, accountSheet } =
         queryParams =
             [ ( "majorDimension", "COLUMNS" ) ]
     in
-    case baseURL of
-        Just url ->
-            API.get token url queryParams expect
+    case token of
+        Just token_ ->
+            case baseURL of
+                Just url ->
+                    API.get token_ url queryParams expect
+
+                Nothing ->
+                    Page.msgToCmd <| GotAccounts <| Result.Err <| Http.BadUrl "No sheet ID"
 
         Nothing ->
-            Page.msgToCmd <| GotAccounts <| Result.Err <| Http.BadUrl "No sheet ID"
+            Cmd.none
 
 
 getGlobals : Model -> Page.Global
@@ -554,6 +563,7 @@ getGlobals model =
     , token = model.auth.token
     , accountSheet = model.sheetSettings.accountSheet
     , expenseSheet = model.sheetSettings.expenseSheet
+    , accountsLoading = model.accountsLoading
     }
 
 
@@ -580,3 +590,12 @@ port logOut : () -> Cmd msg
 
 
 port goBack : (String -> msg) -> Sub msg
+
+
+emptyStringToMaybe : String -> Maybe String
+emptyStringToMaybe str =
+    if String.trim str == "" then
+        Nothing
+
+    else
+        Just str

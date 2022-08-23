@@ -5377,7 +5377,7 @@ var $elm$core$Tuple$pair = F2(
 var $author$project$Main$init = function (_v0) {
 	return A2(
 		$elm$core$Tuple$pair,
-		{accounts: _List_Nil, accountsPage: $author$project$AccountsPage$init, auth: $author$project$Auth$init, currentPage: $author$project$Main$Loading, expenseTracker: $author$project$ExpenseTracker$init, homePage: $author$project$HomePage$init, incomePage: $author$project$IncomePage$init, recentsPage: $author$project$RecentsPage$init, sheetError: '', sheetSettings: $author$project$SettingsPage$init, toastMsg: $elm$core$Maybe$Nothing, transferPage: $author$project$TransferPage$init},
+		{accounts: _List_Nil, accountsLoading: false, accountsPage: $author$project$AccountsPage$init, auth: $author$project$Auth$init, currentPage: $author$project$Main$Loading, expenseTracker: $author$project$ExpenseTracker$init, homePage: $author$project$HomePage$init, incomePage: $author$project$IncomePage$init, recentsPage: $author$project$RecentsPage$init, sheetError: '', sheetSettings: $author$project$SettingsPage$init, toastMsg: $elm$core$Maybe$Nothing, transferPage: $author$project$TransferPage$init},
 		$elm$core$Platform$Cmd$batch(
 			_List_fromArray(
 				[
@@ -5488,6 +5488,10 @@ var $author$project$ExpenseTracker$clearExpenseTrackerData = function (expense) 
 var $author$project$TransferPage$Loaded = {$: 'Loaded'};
 var $author$project$TransferPage$clearForm = function (_v0) {
 	return {amount: '', date: '', fromAccount: '', info: '', notes: '', pageState: $author$project$TransferPage$Loaded, toAccount: '', transferType: $author$project$TransferPage$Transfer};
+};
+var $elm$core$String$trim = _String_trim;
+var $author$project$Main$emptyStringToMaybe = function (str) {
+	return ($elm$core$String$trim(str) === '') ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(str);
 };
 var $author$project$Main$exitApp = _Platform_outgoingPort(
 	'exitApp',
@@ -6399,6 +6403,7 @@ var $author$project$Page$msgToCmd = function (msg) {
 		},
 		$elm$core$Task$succeed(1));
 };
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$core$Maybe$withDefault = F2(
 	function (_default, maybe) {
 		if (maybe.$ === 'Just') {
@@ -6437,18 +6442,23 @@ var $author$project$Main$getAccounts = function (_v0) {
 			return 'https://sheets.googleapis.com/v4/spreadsheets/' + (id + ('/values/' + (accountSheet + '!A:A')));
 		},
 		sheetId);
-	if (baseURL.$ === 'Just') {
-		var url = baseURL.a;
-		return A4($author$project$API$get, token, url, queryParams, expect);
+	if (token.$ === 'Just') {
+		var token_ = token.a;
+		if (baseURL.$ === 'Just') {
+			var url = baseURL.a;
+			return A4($author$project$API$get, token_, url, queryParams, expect);
+		} else {
+			return $author$project$Page$msgToCmd(
+				$author$project$Main$GotAccounts(
+					$elm$core$Result$Err(
+						$elm$http$Http$BadUrl('No sheet ID'))));
+		}
 	} else {
-		return $author$project$Page$msgToCmd(
-			$author$project$Main$GotAccounts(
-				$elm$core$Result$Err(
-					$elm$http$Http$BadUrl('No sheet ID'))));
+		return $elm$core$Platform$Cmd$none;
 	}
 };
 var $author$project$Main$getGlobals = function (model) {
-	return {accountSheet: model.sheetSettings.accountSheet, accounts: model.accounts, expenseSheet: model.sheetSettings.expenseSheet, sheetError: model.sheetError, sheetId: model.sheetSettings.sheetId, token: model.auth.token};
+	return {accountSheet: model.sheetSettings.accountSheet, accounts: model.accounts, accountsLoading: model.accountsLoading, expenseSheet: model.sheetSettings.expenseSheet, sheetError: model.sheetError, sheetId: model.sheetSettings.sheetId, token: model.auth.token};
 };
 var $author$project$Main$SetToastMsg = function (a) {
 	return {$: 'SetToastMsg', a: a};
@@ -6477,8 +6487,6 @@ var $author$project$Main$logOut = _Platform_outgoingPort(
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$core$String$trim = _String_trim;
 var $author$project$AccountsPage$Accounts = function (a) {
 	return {$: 'Accounts', a: a};
 };
@@ -7618,13 +7626,17 @@ var $author$project$Main$update = F2(
 								$elm$core$Tuple$pair,
 								_Utils_update(
 									model,
-									{auth: m, currentPage: $author$project$Main$HomePage}),
+									{accountsLoading: true, auth: m, currentPage: $author$project$Main$HomePage}),
 								$elm$core$Platform$Cmd$batch(
 									_List_fromArray(
 										[
 											cmd_,
 											$author$project$Main$getAccounts(
-											{accountSheet: model.sheetSettings.accountSheet, sheetId: model.sheetSettings.sheetId, token: m.token})
+											{
+												accountSheet: model.sheetSettings.accountSheet,
+												sheetId: model.sheetSettings.sheetId,
+												token: $author$project$Main$emptyStringToMaybe(m.token)
+											})
 										])));
 					}
 				case 'HomePageMsg':
@@ -7746,6 +7758,7 @@ var $author$project$Main$update = F2(
 								_Utils_update(
 									newModel,
 									{
+										accountsLoading: true,
 										toastMsg: $elm$core$Maybe$Just('Saved!')
 									}),
 								$elm$core$Platform$Cmd$batch(
@@ -7753,7 +7766,11 @@ var $author$project$Main$update = F2(
 										[
 											newCmd,
 											$author$project$Main$getAccounts(
-											{accountSheet: m.accountSheet, sheetId: m.sheetId, token: model.auth.token}),
+											{
+												accountSheet: m.accountSheet,
+												sheetId: m.sheetId,
+												token: $author$project$Main$emptyStringToMaybe(model.auth.token)
+											}),
 											$author$project$Main$hideToastMessage(5)
 										])));
 						default:
@@ -7769,14 +7786,16 @@ var $author$project$Main$update = F2(
 								{
 									accounts: $elm$core$Set$toList(
 										$elm$core$Set$fromList(accs)),
+									accountsLoading: false,
 									sheetError: ''
 								}),
 							$elm$core$Platform$Cmd$none);
 					} else {
+						var e = res.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
-								{accounts: _List_Nil, sheetError: 'Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct.'}),
+								{accounts: _List_Nil, accountsLoading: false, sheetError: 'Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct.'}),
 							$elm$core$Platform$Cmd$batch(_List_Nil));
 					}
 				case 'SetToastMsg':
@@ -7927,9 +7946,13 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{sheetSettings: sheetSettings}),
+							{accountsLoading: true, sheetSettings: sheetSettings}),
 						$author$project$Main$getAccounts(
-							{accountSheet: accountSheet, sheetId: sheetId_, token: model.auth.token}));
+							{
+								accountSheet: accountSheet,
+								sheetId: sheetId_,
+								token: $author$project$Main$emptyStringToMaybe(model.auth.token)
+							}));
 				case 'RecentsPageMsg':
 					var recentsPageMsg = msg.a;
 					var _v19 = A3(
@@ -7976,10 +7999,6 @@ var $author$project$Main$update = F2(
 					}
 			}
 		}
-	});
-var $author$project$Page$Global = F6(
-	function (token, sheetId, accounts, sheetError, accountSheet, expenseSheet) {
-		return {accountSheet: accountSheet, accounts: accounts, expenseSheet: expenseSheet, sheetError: sheetError, sheetId: sheetId, token: token};
 	});
 var $author$project$Main$HomePageMsg = function (a) {
 	return {$: 'HomePageMsg', a: a};
@@ -8305,6 +8324,7 @@ var $author$project$AccountsPage$view = function (model) {
 			]));
 };
 var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$Basics$not = _Basics_not;
 var $author$project$ExpenseTracker$pageWrapper = function (body) {
 	return A2(
 		$elm$html$Html$div,
@@ -8421,7 +8441,6 @@ var $elm$core$Basics$composeL = F3(
 		return g(
 			f(x));
 	});
-var $elm$core$Basics$not = _Basics_not;
 var $elm$core$List$all = F2(
 	function (isOkay, list) {
 		return !A2(
@@ -8646,13 +8665,14 @@ var $author$project$ExpenseTracker$view = F2(
 	function (_v0, model) {
 		var sheetError = _v0.sheetError;
 		var accounts = _v0.accounts;
+		var accountsLoading = _v0.accountsLoading;
 		var _v1 = model.pageState;
 		switch (_v1.$) {
 			case 'Loading':
 				return $author$project$Page$pageLoaderDiv;
 			case 'Loaded':
 				return $author$project$ExpenseTracker$pageWrapper(
-					(sheetError !== '') ? A2(
+					((!accountsLoading) && ($elm$core$String$trim(sheetError) !== '')) ? A2(
 						$elm$html$Html$div,
 						_List_Nil,
 						_List_fromArray(
@@ -9022,7 +9042,7 @@ var $author$project$IncomePage$view = F2(
 					]),
 				_List_fromArray(
 					[
-						(globals.sheetError !== '') ? $author$project$ExpenseTracker$showError(globals.sheetError) : (_Utils_eq(globals.sheetId, $elm$core$Maybe$Nothing) ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
+						((!globals.accountsLoading) && ($elm$core$String$trim(globals.sheetError) !== '')) ? $author$project$ExpenseTracker$showError(globals.sheetError) : (_Utils_eq(globals.sheetId, $elm$core$Maybe$Nothing) ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
 						A2(
 						$author$project$Page$formElement,
 						'How much?',
@@ -9411,7 +9431,7 @@ var $author$project$TransferPage$view = F2(
 					]),
 				_List_fromArray(
 					[
-						(globals.sheetError !== '') ? $author$project$ExpenseTracker$showError(globals.sheetError) : (_Utils_eq(globals.sheetId, $elm$core$Maybe$Nothing) ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
+						((!globals.accountsLoading) && ($elm$core$String$trim(globals.sheetError) !== '')) ? $author$project$ExpenseTracker$showError(globals.sheetError) : (_Utils_eq(globals.sheetId, $elm$core$Maybe$Nothing) ? $author$project$ExpenseTracker$showError('No sheet ID.') : $elm$html$Html$text('')),
 						A2(
 						$author$project$Page$formElement,
 						'From which account?',
@@ -9660,7 +9680,7 @@ var $author$project$Main$view = function (model) {
 					$author$project$Main$ExpenseTrackerPageMsg,
 					A2(
 						$author$project$ExpenseTracker$view,
-						A6($author$project$Page$Global, model.auth.token, model.sheetSettings.sheetId, model.accounts, model.sheetError, model.sheetSettings.accountSheet, model.sheetSettings.expenseSheet),
+						$author$project$Main$getGlobals(model),
 						model.expenseTracker));
 			case 'SettingsPage':
 				return A2(

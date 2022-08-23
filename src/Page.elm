@@ -100,6 +100,7 @@ type alias Global =
     , sheetError : Error
     , accountSheet : String
     , expenseSheet : String
+    , accountsLoading : Bool
     }
 
 

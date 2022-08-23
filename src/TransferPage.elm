@@ -127,7 +127,7 @@ view globals model =
         H.div
             [ Attr.class "flex flex-col gap-5"
             ]
-            [ if globals.sheetError /= "" then
+            [ if not globals.accountsLoading && String.trim globals.sheetError /= "" then
                 showError globals.sheetError
 
               else if globals.sheetId == Nothing then
