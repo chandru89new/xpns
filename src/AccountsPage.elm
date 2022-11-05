@@ -8,13 +8,13 @@ import Html.Attributes as Attr
 import Http
 import Json.Decode as JsonD
 import Maybe exposing (withDefault)
-import Page
+import Page exposing (accountsSheetDefault)
 
 
 type Msg
     = GoToHomePage
     | LoadAccounts
-    | AccountsLoaded (Result Http.Error (List (List String)))
+    | AccountsLoaded (Result API.Error (List (List String)))
 
 
 type Accounts
@@ -48,7 +48,7 @@ update globals msg model =
         AccountsLoaded res ->
             case res of
                 Err e ->
-                    ( { model | accounts = ErrorMsg <| Page.errToString e }, Cmd.none )
+                    ( { model | accounts = ErrorMsg <| API.errorToString e }, Cmd.none )
 
                 Ok accs ->
                     let
@@ -93,7 +93,7 @@ renderBody { accounts } =
             H.div [] [ H.text "Loading..." ]
 
         ErrorMsg msg ->
-            H.div [] [ H.text msg ]
+            Page.showError msg
 
         Accounts accs ->
             H.div
@@ -106,14 +106,17 @@ renderBody { accounts } =
 loadAccounts : Page.Global -> Cmd Msg
 loadAccounts { token, sheetId, accountSheet } =
     let
+        accountSheet_ =
+            Maybe.withDefault accountsSheetDefault accountSheet
+
         decoder =
             JsonD.field "values" (JsonD.list (JsonD.list JsonD.string))
 
         baseURL =
-            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ accountSheet ++ "!A2:Z") sheetId
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ accountSheet_ ++ "!A2:Z") sheetId
 
         expect =
-            Http.expectJson
+            API.expectJson
                 AccountsLoaded
                 decoder
 
@@ -125,7 +128,7 @@ loadAccounts { token, sheetId, accountSheet } =
             API.get token url queryParams expect
 
         Nothing ->
-            AccountsLoaded (Result.Err <| Http.BadUrl "No sheet ID set.") |> Page.msgToCmd
+            AccountsLoaded (Result.Err <| API.BadUrl "No sheet ID set.") |> Page.msgToCmd
 
 
 accountCard : Account -> Html msg

@@ -2,12 +2,12 @@ module TransferPage exposing (..)
 
 import API
 import Capacitor
-import ExpenseTracker exposing (showError)
 import FeatherIcons
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
+import Json.Decode as JsonD
 import Json.Encode as JsonE
 import Page
 import Task
@@ -50,7 +50,7 @@ type Msg
     | UpdateDate String
     | ToggleTransferType Bool
     | SaveTransfer
-    | SaveTransferDone (Result Http.Error ())
+    | SaveTransferDone (Result API.Error ())
 
 
 update : Msg -> Model -> Page.Global -> ( Model, Cmd Msg )
@@ -86,10 +86,10 @@ update msg model globals =
                     ( clearForm model, Task.perform (\_ -> GoToHomePage) (Task.succeed ()) )
 
                 Err e ->
-                    ( model
+                    ( { model | pageState = Loaded }
                     , Capacitor.showAlert
                         { title = " Error "
-                        , message = Page.errToString e
+                        , message = API.errorToString e
                         }
                     )
 
@@ -128,10 +128,10 @@ view globals model =
             [ Attr.class "flex flex-col gap-5"
             ]
             [ if not globals.accountsLoading && String.trim globals.sheetError /= "" then
-                showError globals.sheetError
+                Page.showError globals.sheetError
 
               else if globals.sheetId == Nothing then
-                showError "No sheet ID."
+                Page.showError "No sheet ID."
 
               else
                 H.text ""
@@ -259,6 +259,9 @@ isFormValid model =
 saveTransfer : Model -> Page.Global -> Cmd Msg
 saveTransfer model { token, expenseSheet, sheetId } =
     let
+        expenseSheet_ =
+            Maybe.withDefault Page.expenseSheetDefault expenseSheet
+
         body =
             Http.jsonBody <|
                 JsonE.object
@@ -289,14 +292,14 @@ saveTransfer model { token, expenseSheet, sheetId } =
             ]
 
         expect =
-            Http.expectWhatever SaveTransferDone
+            API.expectJson SaveTransferDone (JsonD.succeed ())
 
         baseURL =
-            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append") sheetId
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet_ ++ "!A:Z" ++ ":append") sheetId
     in
     case baseURL of
         Nothing ->
-            Http.BadUrl "No sheet ID set"
+            API.BadUrl "No sheet ID set"
                 |> Result.Err
                 |> SaveTransferDone
                 |> Page.msgToCmd

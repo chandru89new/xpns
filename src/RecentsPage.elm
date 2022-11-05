@@ -12,7 +12,7 @@ import Page
 
 type Msg
     = LoadTransactions
-    | TransactionsLoaded (Result Http.Error (List (List String)))
+    | TransactionsLoaded (Result API.Error (List (List String)))
     | GoToHomePage
 
 
@@ -44,7 +44,7 @@ update globals msg model =
         TransactionsLoaded res ->
             case res of
                 Err e ->
-                    ( { model | transactions = ErrorMsg <| Page.errToString e }, Cmd.none )
+                    ( { model | transactions = ErrorMsg <| API.errorToString e }, Cmd.none )
 
                 Ok list ->
                     ( { model | transactions = Transactions (list |> List.reverse |> List.take 50) }, Cmd.none )
@@ -77,20 +77,23 @@ renderBody { transactions } =
             H.div [] [ H.text "Loading recent transactions..." ]
 
         ErrorMsg str ->
-            H.div [] [ H.text str ]
+            Page.showError str
 
 
 loadTransactions : Page.Global -> Cmd Msg
 loadTransactions { token, sheetId, expenseSheet } =
     let
+        expenseSheet_ =
+            Maybe.withDefault Page.expenseSheetDefault expenseSheet
+
         decoder =
             JsonD.field "values" (JsonD.list (JsonD.list JsonD.string))
 
         baseURL =
-            "https://sheets.googleapis.com/v4/spreadsheets/" ++ (sheetId |> Maybe.withDefault "") ++ "/values/" ++ expenseSheet ++ "!A2:Z"
+            "https://sheets.googleapis.com/v4/spreadsheets/" ++ (sheetId |> Maybe.withDefault "") ++ "/values/" ++ expenseSheet_ ++ "!A2:Z"
 
         expect =
-            Http.expectJson
+            API.expectJson
                 TransactionsLoaded
                 decoder
 
@@ -99,7 +102,7 @@ loadTransactions { token, sheetId, expenseSheet } =
     in
     case sheetId of
         Nothing ->
-            Page.msgToCmd <| TransactionsLoaded (Result.Err <| Http.BadUrl "No sheet ID set")
+            Page.msgToCmd <| TransactionsLoaded (Result.Err <| API.BadUrl "No sheet ID set")
 
         _ ->
             API.get token baseURL queryParams expect

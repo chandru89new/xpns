@@ -67,7 +67,7 @@ viewToaster : Maybe String -> Html msg
 viewToaster string =
     case string of
         Nothing ->
-            H.text ""
+            H.span [] []
 
         Just str ->
             H.div
@@ -98,9 +98,10 @@ type alias Global =
     , sheetId : Maybe String
     , accounts : List String
     , sheetError : Error
-    , accountSheet : String
-    , expenseSheet : String
+    , accountSheet : Maybe String
+    , expenseSheet : Maybe String
     , accountsLoading : Bool
+    , authError : Maybe String
     }
 
 
@@ -120,7 +121,7 @@ errToString e =
             s
 
         Http.BadStatus int ->
-            "Server responded with a bad status code: " ++ String.fromInt int ++ ". Try quitting the app completely and re-opening it."
+            "Server responded with a bad status code: " ++ String.fromInt int ++ ". This could be due to bad data (like wrong sheet name or incorrect values)."
 
         Http.BadBody s ->
             s
@@ -130,3 +131,19 @@ errToString e =
 
         Http.Timeout ->
             "Network timeout! Took too long and there is no response yet."
+
+
+accountsSheetDefault =
+    "accounts"
+
+
+expenseSheetDefault =
+    "expense"
+
+
+showError : String -> Html msg
+showError error =
+    H.div
+        [ Attr.class "p-2 rounded bg-red-100 text-xs mb-5"
+        ]
+        [ H.text error ]

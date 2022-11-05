@@ -7,8 +7,9 @@ import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
+import Json.Decode as JsonD
 import Json.Encode as JsonE
-import Page exposing (formElement)
+import Page exposing (expenseSheetDefault, formElement)
 import Task
 
 
@@ -51,7 +52,7 @@ type Msg
     | UpdateDate String
     | UpdateNotes String
     | SaveExpense
-    | SaveExpenseResponded (Result Http.Error ())
+    | SaveExpenseResponded (Result API.Error ())
     | GoToHomePage
 
 
@@ -59,7 +60,7 @@ type alias Global a =
     { a
         | token : String
         , sheetId : Maybe String
-        , expenseSheet : String
+        , expenseSheet : Maybe String
     }
 
 
@@ -97,10 +98,10 @@ update msg model { token, sheetId, expenseSheet } =
                     ( clearExpenseTrackerData model, Task.perform (\_ -> GoToHomePage) (Task.succeed ()) )
 
                 Err e ->
-                    ( model
+                    ( { model | pageState = Loaded }
                     , Capacitor.showAlert
-                        { title = " Error "
-                        , message = Page.errToString e
+                        { title = "Error"
+                        , message = API.errorToString e
                         }
                     )
 
@@ -129,7 +130,7 @@ view { sheetError, accounts, accountsLoading } model =
         Loaded ->
             pageWrapper <|
                 if not accountsLoading && String.trim sheetError /= "" then
-                    H.div [] [ showError sheetError, viewForm accounts model ]
+                    H.div [] [ Page.showError sheetError, viewForm accounts model ]
 
                 else
                     viewForm accounts model
@@ -262,17 +263,12 @@ isExpenseFormValid expense =
     nothingIsEmpty && amountIsValidNumber
 
 
-showError : String -> Html msg
-showError error =
-    H.div
-        [ Attr.class "p-2 rounded bg-red-100 text-xs mb-5"
-        ]
-        [ H.text error ]
-
-
 saveExpense : Model -> Global a -> Cmd Msg
 saveExpense model { sheetId, token, expenseSheet } =
     let
+        expenseSheet_ =
+            Maybe.withDefault expenseSheetDefault expenseSheet
+
         body =
             Http.jsonBody <|
                 JsonE.object
@@ -284,17 +280,17 @@ saveExpense model { sheetId, token, expenseSheet } =
             ]
 
         expect =
-            Http.expectWhatever SaveExpenseResponded
+            API.expectJson SaveExpenseResponded (JsonD.succeed ())
 
         baseURL =
-            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet ++ "!A:Z" ++ ":append") sheetId
+            Maybe.map (\id -> "https://sheets.googleapis.com/v4/spreadsheets/" ++ id ++ "/values/" ++ expenseSheet_ ++ "!A:Z" ++ ":append") sheetId
     in
     case baseURL of
         Just url ->
             API.post token url queryParams body expect
 
         Nothing ->
-            Page.msgToCmd <| SaveExpenseResponded <| Result.Err <| Http.BadUrl "No sheet ID set."
+            Page.msgToCmd <| SaveExpenseResponded <| Result.Err <| API.BadUrl "No sheet ID set."
 
 
 clearExpenseTrackerData : Model -> Model

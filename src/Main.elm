@@ -47,6 +47,7 @@ type alias Model =
     , toastMsg : Maybe String
     , recentsPage : RecentsPage.Model
     , accountsPage : AccountsPage.Model
+    , authError : Maybe String
     }
 
 
@@ -58,7 +59,6 @@ type Page
     | SettingsPage
     | TransferPage
     | IncomePage
-    | GlobalError
     | RecentsPage
     | AccountsPage
 
@@ -85,7 +85,7 @@ type Msg
 init : () -> ( Model, Cmd Msg )
 init _ =
     Tuple.pair
-        { currentPage = Loading
+        { currentPage = Login
         , homePage = HomePage.init
         , expenseTracker = ExpenseTracker.init
         , accounts = []
@@ -98,6 +98,7 @@ init _ =
         , recentsPage = RecentsPage.init
         , accountsPage = AccountsPage.init
         , accountsLoading = False
+        , authError = Nothing
 
         --sheetId = "1E-XVfWRerpSjdtey0U4NdVL2A00NBacLvmGgHTX6VeU"
         }
@@ -152,9 +153,6 @@ update msg model =
                 Login ->
                     ( model, Cmd.none )
 
-                GlobalError ->
-                    ( model, Cmd.none )
-
                 AccountsPage ->
                     ( { model | currentPage = AccountsPage, accountsPage = AccountsPage.init }
                     , Cmd.map AccountsPageMsg <| Page.msgToCmd AccountsPage.LoadAccounts
@@ -171,7 +169,7 @@ update msg model =
             case m.authState of
                 Auth.AuthError _ ->
                     Tuple.pair
-                        { model | auth = m, currentPage = GlobalError }
+                        { model | auth = m, currentPage = Login, authError = Just "Something went wrong. You need to login again." }
                         cmd_
 
                 Auth.NotLoggedIn ->
@@ -186,14 +184,14 @@ update msg model =
 
                 Auth.LoggedIn ->
                     Tuple.pair
-                        { model | auth = m, currentPage = HomePage, accountsLoading = True }
+                        { model | auth = m, currentPage = HomePage, accountsLoading = True, authError = Nothing }
                         (Cmd.batch
                             [ cmd_
                             , getAccounts
                                 { token =
                                     emptyStringToMaybe m.token
                                 , sheetId = model.sheetSettings.sheetId
-                                , accountSheet = model.sheetSettings.accountSheet
+                                , accountSheet = Maybe.withDefault Page.accountsSheetDefault model.sheetSettings.accountSheet
                                 }
                             ]
                         )
@@ -246,7 +244,7 @@ update msg model =
                             )
 
                         _ ->
-                            ( { model | expenseTracker = m }, cmd_ )
+                            ( { model | expenseTracker = m }, Cmd.batch [ cmd_, hideToastMessage 5 ] )
 
                 _ ->
                     Tuple.pair
@@ -275,7 +273,7 @@ update msg model =
                         , getAccounts
                             { token = emptyStringToMaybe model.auth.token
                             , sheetId = m.sheetId
-                            , accountSheet = m.accountSheet
+                            , accountSheet = Maybe.withDefault Page.accountsSheetDefault m.accountSheet
                             }
                         , hideToastMessage 5
                         ]
@@ -391,18 +389,34 @@ update msg model =
                     else
                         Just sheetId
 
+                accountSheet_ =
+                    if String.trim accountSheet == "" then
+                        Nothing
+
+                    else
+                        Just accountSheet
+
+                expenseSheet_ =
+                    if String.trim expenseSheet == "" then
+                        Nothing
+
+                    else
+                        Just expenseSheet
+
                 sheetSettings =
                     SettingsPage.Model
                         sheetId_
-                        accountSheet
-                        expenseSheet
+                        accountSheet_
+                        expenseSheet_
             in
             ( { model | sheetSettings = sheetSettings, accountsLoading = True }
-            , getAccounts
-                { token = emptyStringToMaybe model.auth.token
-                , sheetId = sheetId_
-                , accountSheet = accountSheet
-                }
+            , Cmd.batch
+                [ getAccounts
+                    { token = emptyStringToMaybe model.auth.token
+                    , sheetId = sheetId_
+                    , accountSheet = Maybe.withDefault Page.accountsSheetDefault accountSheet_
+                    }
+                ]
             )
 
         RecentsPageMsg recentsPageMsg ->
@@ -460,7 +474,7 @@ view model =
                     Page.pageLoaderDiv
 
                 Login ->
-                    viewLoginPage
+                    viewLoginPage model
 
                 HomePage ->
                     HomePage.view |> H.map HomePageMsg
@@ -478,23 +492,6 @@ view model =
                 IncomePage ->
                     IncomePage.view (getGlobals model) model.incomePage |> H.map IncomePageMsg
 
-                GlobalError ->
-                    H.div []
-                        [ Page.renderBody <|
-                            H.div
-                                [ Attr.class "flex flex-col gap-10"
-                                ]
-                                [ H.text "Something went wrong catastrophically. Try logging in again."
-                                , H.div []
-                                    [ H.button
-                                        [ Attr.class "primary"
-                                        , Ev.onClick Logout
-                                        ]
-                                        [ H.text "Login again ->" ]
-                                    ]
-                                ]
-                        ]
-
                 RecentsPage ->
                     RecentsPage.view model.recentsPage
                         |> H.map RecentsPageMsg
@@ -511,12 +508,15 @@ view model =
         ]
 
 
-viewLoginPage : Html Msg
-viewLoginPage =
+viewLoginPage : Model -> Html Msg
+viewLoginPage { authError } =
     H.div
         [ Attr.class "flex flex-col h-screen items-center gap-10 justify-center"
         ]
-        [ H.div [] [ Page.renderIcon { icon = Icons.user, size = 42 } ]
+        [ H.div [ Attr.class "gap-2 flex flex-col items-center" ]
+            [ Page.renderIcon { icon = Icons.user, size = 42 }
+            , H.div [] [ H.text <| Maybe.withDefault "" authError ]
+            ]
         , H.button
             [ Attr.class "primary"
             , Ev.onClick DoLogin
@@ -564,6 +564,7 @@ getGlobals model =
     , accountSheet = model.sheetSettings.accountSheet
     , expenseSheet = model.sheetSettings.expenseSheet
     , accountsLoading = model.accountsLoading
+    , authError = model.authError
     }
 
 

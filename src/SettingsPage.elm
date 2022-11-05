@@ -21,13 +21,13 @@ type Msg
 
 type alias Model =
     { sheetId : Maybe String
-    , accountSheet : String
-    , expenseSheet : String
+    , accountSheet : Maybe String
+    , expenseSheet : Maybe String
     }
 
 
 init =
-    Model (Just "") "" ""
+    Model Nothing Nothing Nothing
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -42,10 +42,20 @@ update msg model =
                     ( { model | sheetId = Just str }, Cmd.none )
 
         UpdateAccountSheetName name ->
-            ( { model | accountSheet = name }, Cmd.none )
+            case String.trim name of
+                "" ->
+                    ( { model | accountSheet = Nothing }, Cmd.none )
+
+                str ->
+                    ( { model | accountSheet = Just str }, Cmd.none )
 
         UpdateExpenseSheetName name ->
-            ( { model | expenseSheet = name }, Cmd.none )
+            case String.trim name of
+                "" ->
+                    ( { model | expenseSheet = Nothing }, Cmd.none )
+
+                str ->
+                    ( { model | expenseSheet = Just str }, Cmd.none )
 
         GoToHomePage ->
             ( model, Cmd.none )
@@ -83,18 +93,21 @@ view { sheetId, accountSheet, expenseSheet } =
                 H.input
                     [ Attr.value (sheetId |> Maybe.withDefault "")
                     , Ev.onInput UpdateSheetId
+                    , Attr.placeholder "eg. 1E-XVfWQerpTjdsey1U9NdVL4A10MJacLvmGgHTX6VeU"
                     ]
                     []
             , Page.formElement "Accounts sheet name:" <|
                 H.input
-                    [ Attr.value accountSheet
+                    [ Attr.value (Maybe.withDefault "" accountSheet)
                     , Ev.onInput UpdateAccountSheetName
+                    , Attr.placeholder "using 'accounts' as default"
                     ]
                     []
             , Page.formElement "Expenses sheet name:" <|
                 H.input
-                    [ Attr.value expenseSheet
+                    [ Attr.value (Maybe.withDefault "" expenseSheet)
                     , Ev.onInput UpdateExpenseSheetName
+                    , Attr.placeholder "using 'expense' as default"
                     ]
                     []
             , H.div [ Attr.class "flex justify-around gap-4" ]
@@ -115,6 +128,6 @@ saveSheetSettings : Model -> Cmd Msg
 saveSheetSettings model =
     Cmd.batch
         [ Capacitor.saveToStorage ( "sheetId", JsonE.string (model.sheetId |> Maybe.withDefault "") )
-        , Capacitor.saveToStorage ( "accountSheet", JsonE.string model.accountSheet )
-        , Capacitor.saveToStorage ( "expenseSheet", JsonE.string model.expenseSheet )
+        , Capacitor.saveToStorage ( "accountSheet", JsonE.string (Maybe.withDefault "" model.accountSheet) )
+        , Capacitor.saveToStorage ( "expenseSheet", JsonE.string (Maybe.withDefault "" model.expenseSheet) )
         ]
