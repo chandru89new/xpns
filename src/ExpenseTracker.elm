@@ -249,7 +249,7 @@ isExpenseFormValid : Model -> Bool
 isExpenseFormValid expense =
     let
         nothingIsEmpty =
-            [ expense.amount ]
+            [ expense.amount, expense.info ]
                 |> List.all (\str -> String.length str > 0)
 
         amountIsValidNumber =

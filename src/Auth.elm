@@ -76,7 +76,7 @@ authUrl =
 
 
 clientId =
-    "34596233405-fgqv4u6utob1c9hkf596g42r6dhdr20d.apps.googleusercontent.com"
+    "34596233405-80at7sn7hu561e59eehfjs1443g6ts95.apps.googleusercontent.com"
 
 
 redirectURI =
