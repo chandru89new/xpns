@@ -5,7 +5,6 @@ import Dict
 import FeatherIcons
 import Html as H exposing (Html)
 import Html.Attributes as Attr
-import Http
 import Json.Decode as JsonD
 import Page
 

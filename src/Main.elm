@@ -4,7 +4,6 @@ import API
 import AccountsPage
 import Auth
 import Browser
-import Capacitor
 import ExpenseTracker exposing (clearExpenseTrackerData)
 import FeatherIcons as Icons
 import HomePage
@@ -287,7 +286,7 @@ update msg model =
                 Ok accs ->
                     ( { model | accountsLoading = False, accounts = accs |> Set.fromList |> Set.toList, sheetError = "" }, Cmd.none )
 
-                Err e ->
+                Err _ ->
                     ( { model | accountsLoading = False, accounts = [], sheetError = "Could not get accounts for the given sheetID/account sheet name combination. Please check if the sheetID and the accounts sheet name are correct." }
                     , Cmd.batch
                         []

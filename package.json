@@ -1,13 +1,12 @@
 {
   "dependencies": {
-    "@capacitor/android": "^3.3.2",
-    "@capacitor/app": "^1.0.7",
-    "@capacitor/browser": "^1.0.6",
-    "@capacitor/cli": "^3.3.2",
-    "@capacitor/clipboard": "^1.0.7",
-    "@capacitor/core": "^3.3.2",
-    "@capacitor/dialog": "^1.0.6",
-    "@capacitor/storage": "^1.2.3",
+    "@capacitor/android": "^4.6.1",
+    "@capacitor/app": "^4.1.1",
+    "@capacitor/browser": "^4.1.0",
+    "@capacitor/clipboard": "^4.1.0",
+    "@capacitor/core": "^4.6.1",
+    "@capacitor/dialog": "^4.1.0",
+    "@capacitor/storage": "^1.2.5",
     "autoprefixer": "^10.4.0",
     "cssnano": "^5.0.10",
     "date-fns": "^2.28.0",
@@ -31,5 +30,8 @@
     "build-android": "yarn build && yarn capacitor copy android && yarn capacitor open android",
     "custom": "yarn dev-build-elm && parcel build index.html && yarn cap copy android && yarn cap open android"
   },
-  "license": "0BSD"
+  "license": "0BSD",
+  "devDependencies": {
+    "@capacitor/cli": "^4.6.1"
+  }
 }
