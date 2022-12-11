@@ -112,14 +112,14 @@ view { sheetId, accountSheet, expenseSheet } =
                     []
             , H.div [ Attr.class "flex justify-around gap-4" ]
                 [ H.button
+                    [ Ev.onClick Reset
+                    ]
+                    [ H.text "Reset" ]
+                , H.button
                     [ Attr.class "primary"
                     , Ev.onClick SaveSheetSettings
                     ]
                     [ H.text "Save" ]
-                , H.button
-                    [ Ev.onClick Reset
-                    ]
-                    [ H.text "Reset" ]
                 ]
             ]
 

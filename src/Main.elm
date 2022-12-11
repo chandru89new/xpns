@@ -4,7 +4,7 @@ import API
 import AccountsPage
 import Auth
 import Browser
-import ExpenseTracker exposing (clearExpenseTrackerData)
+import ExpenseTracker
 import FeatherIcons as Icons
 import HomePage
 import Html as H exposing (Html)
@@ -23,6 +23,7 @@ import Task
 import TransferPage
 
 
+main : Program () Model Msg
 main =
     Browser.element
         { init = init
@@ -47,6 +48,7 @@ type alias Model =
     , recentsPage : RecentsPage.Model
     , accountsPage : AccountsPage.Model
     , authError : Maybe String
+    , currentDate : String
     }
 
 
@@ -79,6 +81,7 @@ type Msg
     | Logout
     | RecentsPageMsg RecentsPage.Msg
     | AccountsPageMsg AccountsPage.Msg
+    | UpdateCurrentDate String
 
 
 init : () -> ( Model, Cmd Msg )
@@ -98,12 +101,14 @@ init _ =
         , accountsPage = AccountsPage.init
         , accountsLoading = False
         , authError = Nothing
+        , currentDate = ""
 
         --sheetId = "1E-XVfWRerpSjdtey0U4NdVL2A00NBacLvmGgHTX6VeU"
         }
         (Cmd.batch
             [ Cmd.map AuthMsg <| Auth.checkForRefreshToken ()
             , Ports.getSheetSettingsFromStorage ()
+            , Ports.getCurrentDate ()
             ]
         )
 
@@ -122,13 +127,16 @@ update msg model =
                 HomePage ->
                     ( { model
                         | currentPage = HomePage
-                        , expenseTracker = clearExpenseTrackerData model.expenseTracker
                       }
                     , Cmd.none
                     )
 
                 ExpenseTrackerPage ->
-                    ( { model | expenseTracker = ExpenseTracker.clearExpenseTrackerData model.expenseTracker, currentPage = ExpenseTrackerPage }, Cmd.none )
+                    let
+                        expenseTrackerModel =
+                            ExpenseTracker.init
+                    in
+                    ( { model | expenseTracker = { expenseTrackerModel | date = model.currentDate, pageState = ExpenseTracker.Loaded }, currentPage = ExpenseTrackerPage }, Ports.getCurrentDate () )
 
                 SettingsPage ->
                     ( { model
@@ -141,10 +149,18 @@ update msg model =
                     ( { model | currentPage = RecentsPage, recentsPage = RecentsPage.init }, Cmd.map RecentsPageMsg <| Page.msgToCmd RecentsPage.LoadTransactions )
 
                 IncomePage ->
-                    ( { model | currentPage = IncomePage }, Cmd.none )
+                    let
+                        incomePageModel =
+                            IncomePage.init
+                    in
+                    ( { model | currentPage = IncomePage, incomePage = { incomePageModel | date = model.currentDate } }, Cmd.none )
 
                 TransferPage ->
-                    ( { model | currentPage = TransferPage }, Cmd.none )
+                    let
+                        transferPageModel =
+                            TransferPage.init
+                    in
+                    ( { model | currentPage = TransferPage, transferPage = { transferPageModel | date = model.currentDate } }, Cmd.none )
 
                 Loading ->
                     ( model, Cmd.none )
@@ -221,15 +237,18 @@ update msg model =
         ExpenseTrackerPageMsg expenseTrackerMsg ->
             let
                 ( m, cmd ) =
-                    ExpenseTracker.update expenseTrackerMsg model.expenseTracker { token = model.auth.token, sheetId = model.sheetSettings.sheetId, expenseSheet = model.sheetSettings.expenseSheet }
+                    ExpenseTracker.update expenseTrackerMsg model.expenseTracker { token = model.auth.token, sheetId = model.sheetSettings.sheetId, expenseSheet = model.sheetSettings.expenseSheet, currentDate = model.currentDate }
 
                 cmd_ =
                     Cmd.map ExpenseTrackerPageMsg <| cmd
+
+                resetFormData =
+                    ExpenseTracker.init
             in
             case expenseTrackerMsg of
                 ExpenseTracker.GoToHomePage ->
                     Tuple.pair
-                        { model | expenseTracker = clearExpenseTrackerData model.expenseTracker, currentPage = HomePage }
+                        { model | expenseTracker = { resetFormData | date = model.currentDate, pageState = ExpenseTracker.Loaded }, currentPage = HomePage }
                         cmd_
 
                 ExpenseTracker.SaveExpenseResponded response ->
@@ -303,7 +322,6 @@ update msg model =
                 ExpenseTrackerPage ->
                     ( { model
                         | currentPage = HomePage
-                        , expenseTracker = clearExpenseTrackerData model.expenseTracker
                       }
                     , Cmd.none
                     )
@@ -454,6 +472,9 @@ update msg model =
                 _ ->
                     ( m_, cmd_ )
 
+        UpdateCurrentDate str ->
+            ( { model | currentDate = str }, Cmd.none )
+
 
 subscriptions _ =
     Sub.batch
@@ -461,6 +482,7 @@ subscriptions _ =
         , Sub.map AuthMsg <| Auth.receiveAuthCode Auth.ReceiveAuthCode
         , receiveSheetSettingsFromStorage ReceiveSheetSettingsFromStorage
         , goBack (\_ -> GoBack)
+        , receiveCurrentDate UpdateCurrentDate
         ]
 
 
@@ -564,6 +586,7 @@ getGlobals model =
     , expenseSheet = model.sheetSettings.expenseSheet
     , accountsLoading = model.accountsLoading
     , authError = model.authError
+    , currentDate = model.currentDate
     }
 
 
@@ -590,6 +613,9 @@ port logOut : () -> Cmd msg
 
 
 port goBack : (String -> msg) -> Sub msg
+
+
+port receiveCurrentDate : (String -> msg) -> Sub msg
 
 
 emptyStringToMaybe : String -> Maybe String

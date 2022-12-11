@@ -61,11 +61,12 @@ type alias Global a =
         | token : String
         , sheetId : Maybe String
         , expenseSheet : Maybe String
+        , currentDate : String
     }
 
 
 update : Msg -> Model -> Global a -> ( Model, Cmd Msg )
-update msg model { token, sheetId, expenseSheet } =
+update msg model globals =
     case msg of
         UpdateAccount acc ->
             ( { model | account = acc }, Cmd.none )
@@ -86,16 +87,16 @@ update msg model { token, sheetId, expenseSheet } =
             ( { model | notes = n }, Cmd.none )
 
         SaveExpense ->
-            if sheetId == Nothing then
+            if globals.sheetId == Nothing then
                 ( model, Cmd.none )
 
             else
-                ( { model | pageState = Saving }, saveExpense model { sheetId = sheetId, token = token, expenseSheet = expenseSheet } )
+                ( { model | pageState = Saving }, saveExpense model globals )
 
         SaveExpenseResponded response ->
             case response of
                 Ok _ ->
-                    ( clearExpenseTrackerData model, Task.perform (\_ -> GoToHomePage) (Task.succeed ()) )
+                    ( clearExpenseTrackerData globals model, Task.perform (\_ -> GoToHomePage) (Task.succeed ()) )
 
                 Err e ->
                     ( { model | pageState = Loaded }
@@ -105,7 +106,7 @@ update msg model { token, sheetId, expenseSheet } =
                         }
                     )
 
-        _ ->
+        GoToHomePage ->
             ( model, Cmd.none )
 
 
@@ -249,7 +250,7 @@ isExpenseFormValid : Model -> Bool
 isExpenseFormValid expense =
     let
         nothingIsEmpty =
-            [ expense.amount, expense.info ]
+            [ expense.amount, expense.info, expense.date ]
                 |> List.all (\str -> String.length str > 0)
 
         amountIsValidNumber =
@@ -293,6 +294,13 @@ saveExpense model { sheetId, token, expenseSheet } =
             Page.msgToCmd <| SaveExpenseResponded <| Result.Err <| API.BadUrl "No sheet ID set."
 
 
-clearExpenseTrackerData : Model -> Model
-clearExpenseTrackerData expense =
-    Model "" expense.account "" "" "" "" Loaded expense.allAccounts
+clearExpenseTrackerData : Global a -> Model -> Model
+clearExpenseTrackerData { currentDate } expense =
+    { expense
+        | amount = ""
+        , info = ""
+        , date = currentDate
+        , notes = ""
+        , pageState = Loaded
+        , category = ""
+    }

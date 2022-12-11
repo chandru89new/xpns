@@ -87,3 +87,12 @@ app.ports.exitApp.subscribe(() => App.exitApp());
 App.addListener('backButton', () => {
   app.ports.goBack.send('');
 });
+
+let pad = (d) => (d < 10 ? `0${d}` : `${d}`);
+app.ports.getCurrentDate.subscribe(() => {
+  let d = new Date();
+  let year = d.getFullYear();
+  let month = d.getMonth() + 1;
+  let date = d.getDate();
+  app.ports.receiveCurrentDate.send(`${pad(year)}-${pad(month)}-${pad(date)}`);
+});

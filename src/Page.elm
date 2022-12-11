@@ -102,6 +102,7 @@ type alias Global =
     , expenseSheet : Maybe String
     , accountsLoading : Bool
     , authError : Maybe String
+    , currentDate : String
     }
 
 
